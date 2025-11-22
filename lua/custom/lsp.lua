@@ -32,4 +32,7 @@ vim.lsp.config["lua_ls"] = {
 	},
 }
 
-vim.lsp.enable("lua_ls")
+require("mason-lspconfig").setup({
+	ensure_installed = { "lua_ls" },
+	automatic_enable = true,
+})
