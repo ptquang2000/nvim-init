@@ -12,15 +12,9 @@ vim.pack.add({
 	{ src = "https://github.com/nvim-lua/plenary.nvim.git" },
 	{ src = "https://github.com/nvim-telescope/telescope.nvim.git" },
 
-	-- https://github.com/nvim-treesitter/nvim-treesitter/issues/270
 	{
 		src = "https://github.com/nvim-treesitter/nvim-treesitter.git",
-		version = "master",
-		data = {
-			run = function(_)
-				vim.cmd("TSUpdate")
-			end,
-		},
+		version = "main",
 	},
 
 	{ src = "https://github.com/tpope/vim-fugitive.git" },
