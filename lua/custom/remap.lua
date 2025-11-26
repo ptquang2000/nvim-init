@@ -17,9 +17,4 @@ vim.keymap.set("n", "<leader>Y", [["+Y]], { desc = "[Y]ank to clipboard" })
 vim.keymap.set({ "n", "v" }, "<leader>y", [["+y]])
 vim.keymap.set({ "n", "v" }, "<leader>d", [["_d]])
 
-vim.keymap.set(
-	"n",
-	"<C-f>",
-	"<cmd>silent !tmux neww ~/.dotfiles/.local/bin/tmux-sessionizer/tmux-sessionizer<CR>",
-	{ desc = "Open tmux sessionizer" }
-)
+vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux neww tmux-sessionizer<CR>", { desc = "Open tmux sessionizer" })
