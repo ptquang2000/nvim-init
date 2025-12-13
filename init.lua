@@ -18,6 +18,8 @@ vim.pack.add({
 	},
 
 	{ src = "https://github.com/tpope/vim-fugitive.git" },
+
+	{ src = "https://github.com/OXY2DEV/markview.nvim.git" },
 })
 
 require("custom")

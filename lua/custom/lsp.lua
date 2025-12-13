@@ -18,6 +18,22 @@ local capabilities = vim.tbl_deep_extend(
 	require("cmp_nvim_lsp").default_capabilities()
 )
 
+vim.diagnostic.config({
+	severity_sort = true,
+	float = {
+		border = "rounded",
+		source = "if_many",
+		style = "minimal",
+		header = "",
+		prefix = "",
+	},
+	underline = { severity = vim.diagnostic.severity.ERROR },
+	virtual_text = {
+		source = "if_many",
+		spacing = 2,
+	},
+})
+
 vim.lsp.config["lua_ls"] = {
 	cmd = { "lua-language-server" },
 	filetypes = { "lua" },
@@ -33,6 +49,6 @@ vim.lsp.config["lua_ls"] = {
 }
 
 require("mason-lspconfig").setup({
-	ensure_installed = { "lua_ls" },
+	ensure_installed = { "lua_ls", "gopls", "rust_analyzer" },
 	automatic_enable = true,
 })
