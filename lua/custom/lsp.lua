@@ -49,6 +49,6 @@ vim.lsp.config["lua_ls"] = {
 }
 
 require("mason-lspconfig").setup({
-	ensure_installed = { "lua_ls", "gopls", "rust_analyzer" },
+	ensure_installed = { "lua_ls", "gopls", "rust_analyzer", "clangd" },
 	automatic_enable = true,
 })
