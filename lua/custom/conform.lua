@@ -9,6 +9,7 @@ require("conform").setup({
 		cpp = { "clang-format" },
 		lua = { "stylua" },
 		go = { "gofmt" },
+		python = { "black", "isort" },
 	},
 	formatters = {
 		["clang-format"] = {
