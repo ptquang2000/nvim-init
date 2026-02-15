@@ -1,5 +1,11 @@
 local builtin = require("telescope.builtin")
-vim.keymap.set("n", "<leader>ff", builtin.find_files, { desc = "Telescope find files" })
-vim.keymap.set("n", "<leader>fg", builtin.live_grep, { desc = "Telescope live grep" })
-vim.keymap.set("n", "<leader>fb", builtin.buffers, { desc = "Telescope buffers" })
-vim.keymap.set("n", "<leader>fh", builtin.help_tags, { desc = "Telescope help tags" })
+local map = function(keys, func, desc, mode)
+	mode = mode or "n"
+	vim.keymap.set(mode, keys, func, { desc = "Telescope: " .. desc })
+end
+map("<leader>fb", builtin.buffers, "[Find] [B]uffers")
+map("<leader>ff", builtin.find_files, "[F]ind [F]iles")
+map("<leader>fg", builtin.live_grep, "[F]ind live [G]rep")
+map("<leader>fh", builtin.help_tags, "[F]ind [H]elp tags")
+map("<leader>fr", builtin.lsp_references, "[F]ind [R]eferences")
+map("<leader>fw", builtin.grep_string, "[F]ind [W]ord", { "n", "v" })
