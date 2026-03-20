@@ -23,6 +23,8 @@ vim.pack.add({
 
 	{ src = "https://github.com/nvim-lua/plenary.nvim.git" },
 	{ src = "https://github.com/ThePrimeagen/harpoon.git", version = "harpoon2" },
+
+	{ src = "https://github.com/lervag/vimtex.git", version = "v2.17" },
 })
 
 require("custom")
