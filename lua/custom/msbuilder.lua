@@ -321,21 +321,18 @@ end
 
 local function build_project(project, msbuild_path, sln_dir, config)
 	local cores = get_build_cores()
-	local sln_file = vim.fn.glob(sln_dir .. "\\*.sln", false, true)[1]
 	local logfile = sln_dir .. "\\msbuild_detailed.log"
+	-- For individual projects, build the .vcxproj directly
+	local build_file = project.guid and (sln_dir .. "\\" .. project.path)
+		or vim.fn.glob(sln_dir .. "\\*.sln", false, true)[1]
 	local args = {
 		msbuild_path,
-		sln_file,
+		build_file,
 		"/p:Configuration=" .. config.configuration,
 		"/p:Platform=" .. config.platform,
 		"/nologo",
 		"/m:" .. cores,
 	}
-	-- For individual projects, use relative path from .sln (strip .vcxproj, replace .- with _)
-	if project.guid then
-		local target = project.path:gsub("%.vcxproj$", ""):gsub("[%.%-]", "_")
-		table.insert(args, 3, "/t:" .. target)
-	end
 	table.insert(args, "/fl")
 	table.insert(args, "/flp:logfile=" .. logfile .. ";verbosity=detailed")
 	-- Delete stale log before starting
@@ -349,42 +346,36 @@ end
 
 local function clean_project(project, msbuild_path, sln_dir, config)
 	local cores = get_build_cores()
-	local sln_file = vim.fn.glob(sln_dir .. "\\*.sln", false, true)[1]
+	-- For individual projects, clean the .vcxproj directly
+	local build_file = project.guid and (sln_dir .. "\\" .. project.path)
+		or vim.fn.glob(sln_dir .. "\\*.sln", false, true)[1]
 	local args = {
 		msbuild_path,
-		sln_file,
+		build_file,
+		"/t:Clean",
 		"/p:Configuration=" .. config.configuration,
 		"/p:Platform=" .. config.platform,
 		"/nologo",
 		"/m:" .. cores,
 	}
-	if project.guid then
-		local target = project.path:gsub("%.vcxproj$", ""):gsub("[%.%-]", "_") .. ":Clean"
-		table.insert(args, 3, "/t:" .. target)
-	else
-		table.insert(args, 3, "/t:Clean")
-	end
 	run_in_terminal(args, "[MSClean: " .. project.name .. "]")
 end
 
 local function rebuild_project(project, msbuild_path, sln_dir, config)
 	local cores = get_build_cores()
-	local sln_file = vim.fn.glob(sln_dir .. "\\*.sln", false, true)[1]
 	local logfile = sln_dir .. "\\msbuild_detailed.log"
+	-- For individual projects, rebuild the .vcxproj directly
+	local build_file = project.guid and (sln_dir .. "\\" .. project.path)
+		or vim.fn.glob(sln_dir .. "\\*.sln", false, true)[1]
 	local args = {
 		msbuild_path,
-		sln_file,
+		build_file,
+		"/t:Rebuild",
 		"/p:Configuration=" .. config.configuration,
 		"/p:Platform=" .. config.platform,
 		"/nologo",
 		"/m:" .. cores,
 	}
-	if project.guid then
-		local target = project.path:gsub("%.vcxproj$", ""):gsub("[%.%-]", "_") .. ":Rebuild"
-		table.insert(args, 3, "/t:" .. target)
-	else
-		table.insert(args, 3, "/t:Rebuild")
-	end
 	table.insert(args, "/fl")
 	table.insert(args, "/flp:logfile=" .. logfile .. ";verbosity=detailed")
 	-- Delete stale log before starting
