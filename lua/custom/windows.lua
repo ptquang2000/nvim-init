@@ -41,4 +41,25 @@ vim.opt.shellcmdflag = "-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Comman
 vim.opt.shellquote = '"'
 vim.opt.shellxquote = ""
 
+-- clangd LSP config (Windows/MSVC specific)
+local capabilities = vim.tbl_deep_extend(
+	"force",
+	{},
+	vim.lsp.protocol.make_client_capabilities(),
+	require("cmp_nvim_lsp").default_capabilities()
+)
+
+vim.lsp.config["clangd"] = {
+	cmd = {
+		"clangd",
+		"--background-index",
+		"--header-insertion=never",
+		"--completion-style=detailed",
+		"--function-arg-placeholders=false",
+	},
+	filetypes = { "c", "cpp", "objc", "objcpp" },
+	root_markers = { "compile_commands.json", ".clangd", ".git" },
+	capabilities = capabilities,
+}
+
 require("custom.msbuilder")

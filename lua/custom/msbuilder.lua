@@ -8,11 +8,36 @@ M.config = {
 local cached_msbuild = nil
 local msbuild_looked_up = false
 
+local last_msbuild_path = nil
+local last_project = nil
+local last_config = nil
+local active_job_id = nil
+local active_buf = nil
+
+local function move_to_front(list, predicate)
+	for i, item in ipairs(list) do
+		if predicate(item) then
+			table.remove(list, i)
+			table.insert(list, 1, item)
+			return
+		end
+	end
+end
+
+local function is_build_running()
+	if active_job_id and active_buf and vim.api.nvim_buf_is_valid(active_buf) then
+		return true
+	end
+	active_job_id = nil
+	active_buf = nil
+	return false
+end
+
 local solution_folder_guid = "2150E333-8FDC-42A3-9474-1A3956D46DE8"
 
 local function get_build_cores()
 	local cpus = #vim.loop.cpu_info()
-	return math.max(1, math.floor(cpus / 3))
+	return math.max(1, math.floor(cpus / 2))
 end
 
 local vs_search_paths = {
@@ -147,12 +172,33 @@ local function get_default_config(sln_path)
 end
 
 local function run_in_terminal(cmd, buf_name)
+	if is_build_running() then
+		vim.notify("A build is already running", vim.log.levels.WARN)
+		return
+	end
+	local display_parts = {}
+	for _, arg in ipairs(cmd) do
+		if arg:find(" ") then
+			table.insert(display_parts, '"' .. arg .. '"')
+		else
+			table.insert(display_parts, arg)
+		end
+	end
+	vim.notify(">> " .. table.concat(display_parts, " "), vim.log.levels.INFO)
 	vim.cmd("botright vsplit")
 	vim.cmd("enew")
-	vim.fn.termopen(cmd)
+	local job_id = vim.fn.termopen(cmd, {
+		env = { CMAKE_EXPORT_COMPILE_COMMANDS = "1" },
+		on_exit = function()
+			active_job_id = nil
+			active_buf = nil
+		end,
+	})
+	active_job_id = job_id
+	active_buf = vim.api.nvim_get_current_buf()
+	vim.cmd("normal! G")
 	vim.cmd("startinsert")
-	local buf = vim.api.nvim_get_current_buf()
-	pcall(vim.api.nvim_buf_set_name, buf, buf_name)
+	pcall(vim.api.nvim_buf_set_name, active_buf, buf_name)
 end
 
 local function build_project(project, msbuild_path, sln_dir, config)
@@ -170,6 +216,9 @@ local function build_project(project, msbuild_path, sln_dir, config)
 		local target = project.name:gsub("[%.%-]", "_")
 		table.insert(args, 3, "/t:" .. target)
 	end
+	local logfile = sln_dir .. "\\msbuild_detailed.log"
+	table.insert(args, "/fl")
+	table.insert(args, "/flp:logfile=" .. logfile .. ";verbosity=detailed")
 	run_in_terminal(args, "[MSBuild: " .. project.name .. "]")
 end
 
@@ -192,6 +241,28 @@ local function clean_project(project, msbuild_path, sln_dir, config)
 	run_in_terminal(args, "[MSClean: " .. project.name .. "]")
 end
 
+local function rebuild_project(project, msbuild_path, sln_dir, config)
+	local cores = get_build_cores()
+	local sln_file = vim.fn.glob(sln_dir .. "\\*.sln", false, true)[1]
+	local args = {
+		msbuild_path, sln_file,
+		"/p:Configuration=" .. config.configuration,
+		"/p:Platform=" .. config.platform,
+		"/nologo",
+		"/m:" .. cores,
+	}
+	if project.guid then
+		local target = project.name:gsub("[%.%-]", "_") .. ":Rebuild"
+		table.insert(args, 3, "/t:" .. target)
+	else
+		table.insert(args, 3, "/t:Rebuild")
+	end
+	local logfile = sln_dir .. "\\msbuild_detailed.log"
+	table.insert(args, "/fl")
+	table.insert(args, "/flp:logfile=" .. logfile .. ";verbosity=detailed")
+	run_in_terminal(args, "[MSRebuild: " .. project.name .. "]")
+end
+
 local pickers, finders, conf, actions, action_state
 
 local function ensure_telescope()
@@ -206,13 +277,19 @@ local function select_config_and_build(project, msbuild_path, sln_path)
 	local sln_dir = vim.fs.dirname(sln_path)
 	local configs = parse_sln_configs(sln_path)
 
+	if last_config then
+		move_to_front(configs, function(c) return c.configuration == last_config.configuration and c.platform == last_config.platform end)
+	end
+
 	if #configs == 0 then
 		local default_config = { configuration = "Debug", platform = "x64" }
+		last_config = default_config
 		build_project(project, msbuild_path, sln_dir, default_config)
 		return
 	end
 
 	if #configs == 1 then
+		last_config = configs[1]
 		build_project(project, msbuild_path, sln_dir, configs[1])
 		return
 	end
@@ -236,6 +313,7 @@ local function select_config_and_build(project, msbuild_path, sln_path)
 				actions.close(prompt_bufnr)
 				local selection = action_state.get_selected_entry()
 				if selection then
+					last_config = selection.value
 					build_project(project, msbuild_path, sln_dir, selection.value)
 				end
 			end)
@@ -248,13 +326,19 @@ local function select_config_and_clean(project, msbuild_path, sln_path)
 	local sln_dir = vim.fs.dirname(sln_path)
 	local configs = parse_sln_configs(sln_path)
 
+	if last_config then
+		move_to_front(configs, function(c) return c.configuration == last_config.configuration and c.platform == last_config.platform end)
+	end
+
 	if #configs == 0 then
 		local default_config = { configuration = "Debug", platform = "x64" }
+		last_config = default_config
 		clean_project(project, msbuild_path, sln_dir, default_config)
 		return
 	end
 
 	if #configs == 1 then
+		last_config = configs[1]
 		clean_project(project, msbuild_path, sln_dir, configs[1])
 		return
 	end
@@ -278,6 +362,7 @@ local function select_config_and_clean(project, msbuild_path, sln_path)
 				actions.close(prompt_bufnr)
 				local selection = action_state.get_selected_entry()
 				if selection then
+					last_config = selection.value
 					clean_project(project, msbuild_path, sln_dir, selection.value)
 				end
 			end)
@@ -286,7 +371,60 @@ local function select_config_and_clean(project, msbuild_path, sln_path)
 	}):find()
 end
 
+local function select_config_and_rebuild(project, msbuild_path, sln_path)
+	local sln_dir = vim.fs.dirname(sln_path)
+	local configs = parse_sln_configs(sln_path)
+
+	if last_config then
+		move_to_front(configs, function(c) return c.configuration == last_config.configuration and c.platform == last_config.platform end)
+	end
+
+	if #configs == 0 then
+		local default_config = { configuration = "Debug", platform = "x64" }
+		last_config = default_config
+		rebuild_project(project, msbuild_path, sln_dir, default_config)
+		return
+	end
+
+	if #configs == 1 then
+		last_config = configs[1]
+		rebuild_project(project, msbuild_path, sln_dir, configs[1])
+		return
+	end
+
+	pickers.new({}, {
+		prompt_title = "Rebuild Configuration",
+		finder = finders.new_table({
+			results = configs,
+			entry_maker = function(entry)
+				local display = entry.configuration .. " | " .. entry.platform
+				return {
+					value = entry,
+					display = display,
+					ordinal = display,
+				}
+			end,
+		}),
+		sorter = conf.generic_sorter({}),
+		attach_mappings = function(prompt_bufnr, _)
+			actions.select_default:replace(function()
+				actions.close(prompt_bufnr)
+				local selection = action_state.get_selected_entry()
+				if selection then
+					last_config = selection.value
+					rebuild_project(project, msbuild_path, sln_dir, selection.value)
+				end
+			end)
+			return true
+		end,
+	}):find()
+end
+
 local function pick_project(msbuild_path, sln_path, projects)
+	if last_project then
+		move_to_front(projects, function(p) return p.name == last_project.name end)
+	end
+
 	pickers.new({}, {
 		prompt_title = "Build Project",
 		finder = finders.new_table({
@@ -305,6 +443,7 @@ local function pick_project(msbuild_path, sln_path, projects)
 				actions.close(prompt_bufnr)
 				local selection = action_state.get_selected_entry()
 				if selection then
+					last_project = selection.value
 					select_config_and_build(selection.value, msbuild_path, sln_path)
 				end
 			end)
@@ -314,6 +453,10 @@ local function pick_project(msbuild_path, sln_path, projects)
 end
 
 local function pick_project_for_clean(msbuild_path, sln_path, projects)
+	if last_project then
+		move_to_front(projects, function(p) return p.name == last_project.name end)
+	end
+
 	pickers.new({}, {
 		prompt_title = "Clean Project",
 		finder = finders.new_table({
@@ -332,6 +475,7 @@ local function pick_project_for_clean(msbuild_path, sln_path, projects)
 				actions.close(prompt_bufnr)
 				local selection = action_state.get_selected_entry()
 				if selection then
+					last_project = selection.value
 					select_config_and_clean(selection.value, msbuild_path, sln_path)
 				end
 			end)
@@ -340,8 +484,45 @@ local function pick_project_for_clean(msbuild_path, sln_path, projects)
 	}):find()
 end
 
+local function pick_project_for_rebuild(msbuild_path, sln_path, projects)
+	if last_project then
+		move_to_front(projects, function(p) return p.name == last_project.name end)
+	end
+
+	pickers.new({}, {
+		prompt_title = "Rebuild Project",
+		finder = finders.new_table({
+			results = projects,
+			entry_maker = function(entry)
+				return {
+					value = entry,
+					display = entry.name,
+					ordinal = entry.name,
+				}
+			end,
+		}),
+		sorter = conf.generic_sorter({}),
+		attach_mappings = function(prompt_bufnr, _)
+			actions.select_default:replace(function()
+				actions.close(prompt_bufnr)
+				local selection = action_state.get_selected_entry()
+				if selection then
+					last_project = selection.value
+					select_config_and_rebuild(selection.value, msbuild_path, sln_path)
+				end
+			end)
+			return true
+		end,
+	}):find()
+end
+
 local function pick_vs_installation(installations, callback)
+	if last_msbuild_path then
+		move_to_front(installations, function(inst) return inst.msbuild_path == last_msbuild_path end)
+	end
+
 	if #installations == 1 then
+		last_msbuild_path = installations[1].msbuild_path
 		callback(installations[1].msbuild_path)
 		return
 	end
@@ -364,6 +545,7 @@ local function pick_vs_installation(installations, callback)
 				actions.close(prompt_bufnr)
 				local selection = action_state.get_selected_entry()
 				if selection then
+					last_msbuild_path = selection.value.msbuild_path
 					callback(selection.value.msbuild_path)
 				end
 			end)
@@ -436,6 +618,38 @@ function M.select_and_clean()
 	end)
 end
 
+function M.select_and_rebuild()
+	local sln_path = find_solution()
+	if not sln_path then
+		vim.notify("No .sln file found in " .. vim.fn.getcwd(), vim.log.levels.ERROR)
+		return
+	end
+
+	ensure_telescope()
+
+	local projects = parse_sln_projects(sln_path)
+	if #projects == 0 then
+		vim.notify("No rebuildable projects found in solution", vim.log.levels.WARN)
+		return
+	end
+
+	table.insert(projects, 1, {
+		name = vim.fn.fnamemodify(sln_path, ":t") .. " (entire solution)",
+		path = vim.fn.fnamemodify(sln_path, ":t"),
+		guid = nil,
+	})
+
+	local installations = detect_vs_installations()
+	if #installations == 0 then
+		vim.notify("No Visual Studio installations found. Install Visual Studio with C++ workload.", vim.log.levels.ERROR)
+		return
+	end
+
+	pick_vs_installation(installations, function(msbuild_path)
+		pick_project_for_rebuild(msbuild_path, sln_path, projects)
+	end)
+end
+
 function M.generate_compile_commands()
 	local sln_path = find_solution()
 	if not sln_path then
@@ -448,73 +662,84 @@ function M.generate_compile_commands()
 		return
 	end
 
-	ensure_telescope()
+	local sln_dir = vim.fs.dirname(sln_path)
+	local logfile = sln_dir .. "\\msbuild_detailed.log"
+	local output = sln_dir .. "\\compile_commands.json"
 
-	local installations = detect_vs_installations()
-	if #installations == 0 then
-		vim.notify("No Visual Studio installations found. Install Visual Studio with C++ workload.", vim.log.levels.ERROR)
+	if vim.fn.filereadable(logfile) ~= 1 then
+		vim.notify("msbuild_detailed.log not found. Run :MSBuild first with detailed logging.", vim.log.levels.ERROR)
 		return
 	end
 
-	pick_vs_installation(installations, function(msbuild_path)
-		local sln_dir = vim.fs.dirname(sln_path)
-		local configs = parse_sln_configs(sln_path)
+	local ms2cc_cmd = "ms2cc -i '" .. logfile .. "' -o '" .. output .. "' --overwrite"
+	local ps_cmd = 'Write-Host ">> ' .. ms2cc_cmd:gsub("'", "''") .. '";'
+		.. " " .. ms2cc_cmd
+		.. "; Remove-Item '" .. logfile .. "'"
+		.. '; Write-Host "compile_commands.json generated successfully" -ForegroundColor Green'
 
-		local function run_generate(config)
-			local logfile = sln_dir .. "\\msbuild_detailed.log"
-			local output = sln_dir .. "\\compile_commands.json"
+	if is_build_running() then
+		vim.notify("A build is already running", vim.log.levels.WARN)
+		return
+	end
+	vim.cmd("botright vsplit")
+	vim.cmd("enew")
+	local job_id = vim.fn.termopen({ "pwsh", "-NoLogo", "-NoProfile", "-Command", ps_cmd }, {
+		on_exit = function()
+			active_job_id = nil
+			active_buf = nil
+		end,
+	})
+	active_job_id = job_id
+	active_buf = vim.api.nvim_get_current_buf()
+	vim.cmd("normal! G")
+	vim.cmd("startinsert")
+end
 
-			local ps_cmd = '& "' .. msbuild_path .. '" "' .. sln_path .. '"'
-				.. " /t:Rebuild /nologo"
-				.. " /p:Configuration=" .. config.configuration
-				.. " /p:Platform=" .. config.platform
-				.. ' /fl /flp:"logfile=' .. logfile .. ';verbosity=detailed"'
-				.. "; ms2cc -i '" .. logfile .. "' -o '" .. output .. "' --overwrite"
-				.. "; Remove-Item '" .. logfile .. "'"
-				.. '; Write-Host "compile_commands.json generated successfully"'
+function M.compile_current_file()
+	local filepath = vim.api.nvim_buf_get_name(0)
+	if filepath == "" then
+		vim.notify("No file in current buffer", vim.log.levels.ERROR)
+		return
+	end
 
-			vim.cmd("botright vsplit")
-			vim.cmd("enew")
-			vim.fn.termopen({"pwsh", "-NoLogo", "-NoProfile", "-Command", ps_cmd})
-			vim.cmd("startinsert")
-		end
+	local ext = vim.fn.fnamemodify(filepath, ":e"):lower()
+	local valid_exts = { c = true, cpp = true, cc = true, cxx = true, h = true, hpp = true }
+	if not valid_exts[ext] then
+		vim.notify("Not a C/C++ file: " .. ext, vim.log.levels.ERROR)
+		return
+	end
 
-		if #configs == 0 then
-			run_generate({ configuration = "Debug", platform = "x64" })
-			return
-		end
+	local sln_path = find_solution()
+	if not sln_path then
+		vim.notify("No .sln file found in " .. vim.fn.getcwd(), vim.log.levels.ERROR)
+		return
+	end
 
-		if #configs == 1 then
-			run_generate(configs[1])
-			return
-		end
+	local msbuild_path = find_msbuild()
+	if not msbuild_path then
+		vim.notify("MSBuild not found. Install Visual Studio with C++ workload.", vim.log.levels.ERROR)
+		return
+	end
 
-		pickers.new({}, {
-			prompt_title = "Build Configuration (for compile_commands)",
-			finder = finders.new_table({
-				results = configs,
-				entry_maker = function(entry)
-					local display = entry.configuration .. " | " .. entry.platform
-					return {
-						value = entry,
-						display = display,
-						ordinal = display,
-					}
-				end,
-			}),
-			sorter = conf.generic_sorter({}),
-			attach_mappings = function(prompt_bufnr, _)
-				actions.select_default:replace(function()
-					actions.close(prompt_bufnr)
-					local selection = action_state.get_selected_entry()
-					if selection then
-						run_generate(selection.value)
-					end
-				end)
-				return true
-			end,
-		}):find()
-	end)
+	local sln_dir = vim.fs.dirname(sln_path)
+	local config = M.config.configuration and M.config or last_config or get_default_config(sln_path)
+
+	-- Make file path relative to solution directory
+	local relative_path = vim.fn.fnamemodify(filepath, ":.")
+	local sln_dir_prefix = vim.fn.fnamemodify(sln_dir, ":.")
+	if relative_path:sub(1, #sln_dir_prefix) == sln_dir_prefix then
+		relative_path = relative_path:sub(#sln_dir_prefix + 2)
+	end
+
+	local filename = vim.fn.fnamemodify(filepath, ":t")
+	local args = {
+		msbuild_path, sln_path,
+		"/p:Configuration=" .. config.configuration,
+		"/p:Platform=" .. config.platform,
+		"/p:SelectedFiles=" .. relative_path,
+		"/nologo",
+	}
+	run_in_terminal(args, "[MSCompile: " .. filename .. "]")
 end
 
 -- Expose internals for testing
@@ -528,19 +753,8 @@ M._get_default_config = get_default_config
 -- User commands
 vim.api.nvim_create_user_command("MSBuild", function() M.select_and_build() end, { desc = "MSBuild: Build project" })
 vim.api.nvim_create_user_command("MSClean", function() M.select_and_clean() end, { desc = "MSBuild: Clean project" })
+vim.api.nvim_create_user_command("MSRebuild", function() M.select_and_rebuild() end, { desc = "MSBuild: Rebuild project" })
+vim.api.nvim_create_user_command("MSCompile", function() M.compile_current_file() end, { desc = "MSBuild: Compile current file" })
 vim.api.nvim_create_user_command("MSGenerate", function() M.generate_compile_commands() end, { desc = "MSBuild: Generate compile_commands.json" })
-
--- Keybindings
-vim.keymap.set("n", "<leader>bp", function()
-	M.select_and_build()
-end, { desc = "MSBuild: Build project" })
-
-vim.keymap.set("n", "<leader>bc", function()
-	M.select_and_clean()
-end, { desc = "MSBuild: Clean project" })
-
-vim.keymap.set("n", "<leader>bg", function()
-	M.generate_compile_commands()
-end, { desc = "MSBuild: Generate compile_commands.json" })
 
 return M

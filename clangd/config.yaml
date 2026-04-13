@@ -1,0 +1,24 @@
+CompileFlags:
+  Compiler: cl
+  Remove:
+    # Debug/PDB flags (build artifacts, not semantic)
+    - /Zi
+    - /ZI
+    - /Fd*
+    - /FS
+    # Precompiled header output paths (clangd handles PCH differently)
+    - /Fp*
+    - /Yu*
+    - /Yc*
+    # Multi-process compilation (irrelevant to single-TU analysis)
+    - /MP
+    - /MP*
+    # Object/output file paths
+    - /Fo*
+    - /Fe*
+    # Error reporting and diagnostics format (VS-specific)
+    - /errorReport:*
+    - /FC
+    # Source file charset (clangd assumes UTF-8)
+    - /source-charset:*
+    - /execution-charset:*
