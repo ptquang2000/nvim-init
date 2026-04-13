@@ -304,6 +304,7 @@ local function run_in_terminal(cmd, buf_name, opts)
 	env["CMAKE_EXPORT_COMPILE_COMMANDS"] = "ON"
 	local job_id = vim.fn.termopen(cmd, {
 		env = env,
+		cwd = opts.cwd,
 		on_exit = function(_, exit_code)
 			active_job_id = nil
 			active_buf = nil
@@ -338,6 +339,7 @@ local function build_project(project, msbuild_path, sln_dir, config)
 	-- Delete stale log before starting
 	vim.fn.delete(logfile)
 	run_in_terminal(args, "[MSBuild: " .. project.name .. "]", {
+		cwd = sln_dir,
 		on_success = function()
 			run_ms2cc(sln_dir)
 		end,
@@ -358,7 +360,7 @@ local function clean_project(project, msbuild_path, sln_dir, config)
 		"/nologo",
 		"/m:" .. cores,
 	}
-	run_in_terminal(args, "[MSClean: " .. project.name .. "]")
+	run_in_terminal(args, "[MSClean: " .. project.name .. "]", { cwd = sln_dir })
 end
 
 local function rebuild_project(project, msbuild_path, sln_dir, config)
@@ -381,6 +383,7 @@ local function rebuild_project(project, msbuild_path, sln_dir, config)
 	-- Delete stale log before starting
 	vim.fn.delete(logfile)
 	run_in_terminal(args, "[MSRebuild: " .. project.name .. "]", {
+		cwd = sln_dir,
 		on_success = function()
 			run_ms2cc(sln_dir)
 		end,
