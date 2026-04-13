@@ -8,9 +8,7 @@ M.config = {
 local cached_msbuild = nil
 local msbuild_looked_up = false
 
-local last_msbuild_path = nil
-local last_project = nil
-local last_config = nil
+local saved_chains = {}
 local active_job_id = nil
 local active_buf = nil
 
@@ -22,6 +20,27 @@ local function move_to_front(list, predicate)
 			return
 		end
 	end
+end
+
+local function chains_match(a, b)
+	return a.msbuild_path == b.msbuild_path
+		and a.project.name == b.project.name
+		and a.config.configuration == b.config.configuration
+		and a.config.platform == b.config.platform
+end
+
+local function save_chain(chain)
+	for i, existing in ipairs(saved_chains) do
+		if chains_match(existing, chain) then
+			table.remove(saved_chains, i)
+			break
+		end
+	end
+	table.insert(saved_chains, 1, chain)
+end
+
+local function chain_display(chain)
+	return chain.project.name .. " | " .. chain.config.configuration .. " | " .. chain.config.platform
 end
 
 local function is_build_running()
@@ -387,25 +406,72 @@ local function ensure_telescope()
 	action_state = action_state or require("telescope.actions.state")
 end
 
+local function pick_chain_or_new(prompt_title, on_chain, on_new)
+	if #saved_chains == 0 then
+		on_new()
+		return
+	end
+
+	ensure_telescope()
+
+	local entries = {}
+	for _, chain in ipairs(saved_chains) do
+		table.insert(entries, { chain = chain, display = chain_display(chain) })
+	end
+	table.insert(entries, { chain = nil, display = "[New selection...]" })
+
+	pickers
+		.new({}, {
+			prompt_title = prompt_title,
+			finder = finders.new_table({
+				results = entries,
+				entry_maker = function(entry)
+					return {
+						value = entry,
+						display = entry.display,
+						ordinal = entry.display,
+					}
+				end,
+			}),
+			sorter = conf.generic_sorter({}),
+			attach_mappings = function(prompt_bufnr, _)
+				actions.select_default:replace(function()
+					actions.close(prompt_bufnr)
+					local selection = action_state.get_selected_entry()
+					if selection then
+						if selection.value.chain then
+							on_chain(selection.value.chain)
+						else
+							on_new()
+						end
+					end
+				end)
+				return true
+			end,
+		})
+		:find()
+end
+
 local function select_config_and_build(project, msbuild_path, sln_path)
 	local sln_dir = vim.fs.dirname(sln_path)
 	local configs = parse_sln_configs(sln_path)
 
-	if last_config then
+	if saved_chains[1] then
 		move_to_front(configs, function(c)
-			return c.configuration == last_config.configuration and c.platform == last_config.platform
+			return c.configuration == saved_chains[1].config.configuration
+				and c.platform == saved_chains[1].config.platform
 		end)
 	end
 
 	if #configs == 0 then
 		local default_config = { configuration = "Debug", platform = "x64" }
-		last_config = default_config
+		save_chain({ msbuild_path = msbuild_path, project = project, config = default_config })
 		build_project(project, msbuild_path, sln_dir, default_config)
 		return
 	end
 
 	if #configs == 1 then
-		last_config = configs[1]
+		save_chain({ msbuild_path = msbuild_path, project = project, config = configs[1] })
 		build_project(project, msbuild_path, sln_dir, configs[1])
 		return
 	end
@@ -430,7 +496,7 @@ local function select_config_and_build(project, msbuild_path, sln_path)
 					actions.close(prompt_bufnr)
 					local selection = action_state.get_selected_entry()
 					if selection then
-						last_config = selection.value
+						save_chain({ msbuild_path = msbuild_path, project = project, config = selection.value })
 						build_project(project, msbuild_path, sln_dir, selection.value)
 					end
 				end)
@@ -444,21 +510,22 @@ local function select_config_and_clean(project, msbuild_path, sln_path)
 	local sln_dir = vim.fs.dirname(sln_path)
 	local configs = parse_sln_configs(sln_path)
 
-	if last_config then
+	if saved_chains[1] then
 		move_to_front(configs, function(c)
-			return c.configuration == last_config.configuration and c.platform == last_config.platform
+			return c.configuration == saved_chains[1].config.configuration
+				and c.platform == saved_chains[1].config.platform
 		end)
 	end
 
 	if #configs == 0 then
 		local default_config = { configuration = "Debug", platform = "x64" }
-		last_config = default_config
+		save_chain({ msbuild_path = msbuild_path, project = project, config = default_config })
 		clean_project(project, msbuild_path, sln_dir, default_config)
 		return
 	end
 
 	if #configs == 1 then
-		last_config = configs[1]
+		save_chain({ msbuild_path = msbuild_path, project = project, config = configs[1] })
 		clean_project(project, msbuild_path, sln_dir, configs[1])
 		return
 	end
@@ -483,7 +550,7 @@ local function select_config_and_clean(project, msbuild_path, sln_path)
 					actions.close(prompt_bufnr)
 					local selection = action_state.get_selected_entry()
 					if selection then
-						last_config = selection.value
+						save_chain({ msbuild_path = msbuild_path, project = project, config = selection.value })
 						clean_project(project, msbuild_path, sln_dir, selection.value)
 					end
 				end)
@@ -497,21 +564,22 @@ local function select_config_and_rebuild(project, msbuild_path, sln_path)
 	local sln_dir = vim.fs.dirname(sln_path)
 	local configs = parse_sln_configs(sln_path)
 
-	if last_config then
+	if saved_chains[1] then
 		move_to_front(configs, function(c)
-			return c.configuration == last_config.configuration and c.platform == last_config.platform
+			return c.configuration == saved_chains[1].config.configuration
+				and c.platform == saved_chains[1].config.platform
 		end)
 	end
 
 	if #configs == 0 then
 		local default_config = { configuration = "Debug", platform = "x64" }
-		last_config = default_config
+		save_chain({ msbuild_path = msbuild_path, project = project, config = default_config })
 		rebuild_project(project, msbuild_path, sln_dir, default_config)
 		return
 	end
 
 	if #configs == 1 then
-		last_config = configs[1]
+		save_chain({ msbuild_path = msbuild_path, project = project, config = configs[1] })
 		rebuild_project(project, msbuild_path, sln_dir, configs[1])
 		return
 	end
@@ -536,7 +604,7 @@ local function select_config_and_rebuild(project, msbuild_path, sln_path)
 					actions.close(prompt_bufnr)
 					local selection = action_state.get_selected_entry()
 					if selection then
-						last_config = selection.value
+						save_chain({ msbuild_path = msbuild_path, project = project, config = selection.value })
 						rebuild_project(project, msbuild_path, sln_dir, selection.value)
 					end
 				end)
@@ -547,9 +615,9 @@ local function select_config_and_rebuild(project, msbuild_path, sln_path)
 end
 
 local function pick_project(msbuild_path, sln_path, projects)
-	if last_project then
+	if saved_chains[1] then
 		move_to_front(projects, function(p)
-			return p.name == last_project.name
+			return p.name == saved_chains[1].project.name
 		end)
 	end
 
@@ -572,7 +640,6 @@ local function pick_project(msbuild_path, sln_path, projects)
 					actions.close(prompt_bufnr)
 					local selection = action_state.get_selected_entry()
 					if selection then
-						last_project = selection.value
 						select_config_and_build(selection.value, msbuild_path, sln_path)
 					end
 				end)
@@ -583,9 +650,9 @@ local function pick_project(msbuild_path, sln_path, projects)
 end
 
 local function pick_project_for_clean(msbuild_path, sln_path, projects)
-	if last_project then
+	if saved_chains[1] then
 		move_to_front(projects, function(p)
-			return p.name == last_project.name
+			return p.name == saved_chains[1].project.name
 		end)
 	end
 
@@ -608,7 +675,6 @@ local function pick_project_for_clean(msbuild_path, sln_path, projects)
 					actions.close(prompt_bufnr)
 					local selection = action_state.get_selected_entry()
 					if selection then
-						last_project = selection.value
 						select_config_and_clean(selection.value, msbuild_path, sln_path)
 					end
 				end)
@@ -619,9 +685,9 @@ local function pick_project_for_clean(msbuild_path, sln_path, projects)
 end
 
 local function pick_project_for_rebuild(msbuild_path, sln_path, projects)
-	if last_project then
+	if saved_chains[1] then
 		move_to_front(projects, function(p)
-			return p.name == last_project.name
+			return p.name == saved_chains[1].project.name
 		end)
 	end
 
@@ -644,7 +710,6 @@ local function pick_project_for_rebuild(msbuild_path, sln_path, projects)
 					actions.close(prompt_bufnr)
 					local selection = action_state.get_selected_entry()
 					if selection then
-						last_project = selection.value
 						select_config_and_rebuild(selection.value, msbuild_path, sln_path)
 					end
 				end)
@@ -655,14 +720,13 @@ local function pick_project_for_rebuild(msbuild_path, sln_path, projects)
 end
 
 local function pick_vs_installation(installations, callback)
-	if last_msbuild_path then
+	if saved_chains[1] then
 		move_to_front(installations, function(inst)
-			return inst.msbuild_path == last_msbuild_path
+			return inst.msbuild_path == saved_chains[1].msbuild_path
 		end)
 	end
 
 	if #installations == 1 then
-		last_msbuild_path = installations[1].msbuild_path
 		callback(installations[1].msbuild_path)
 		return
 	end
@@ -686,7 +750,6 @@ local function pick_vs_installation(installations, callback)
 					actions.close(prompt_bufnr)
 					local selection = action_state.get_selected_entry()
 					if selection then
-						last_msbuild_path = selection.value.msbuild_path
 						callback(selection.value.msbuild_path)
 					end
 				end)
@@ -705,29 +768,35 @@ function M.select_and_build()
 
 	ensure_telescope()
 
-	local projects = parse_sln_projects(sln_path)
-	if #projects == 0 then
-		vim.notify("No buildable projects found in solution", vim.log.levels.WARN)
-		return
-	end
+	pick_chain_or_new("MSBuild", function(chain)
+		local sln_dir = vim.fs.dirname(sln_path)
+		save_chain(chain)
+		build_project(chain.project, chain.msbuild_path, sln_dir, chain.config)
+	end, function()
+		local projects = parse_sln_projects(sln_path)
+		if #projects == 0 then
+			vim.notify("No buildable projects found in solution", vim.log.levels.WARN)
+			return
+		end
 
-	table.insert(projects, 1, {
-		name = vim.fn.fnamemodify(sln_path, ":t") .. " (entire solution)",
-		path = vim.fn.fnamemodify(sln_path, ":t"),
-		guid = nil,
-	})
+		table.insert(projects, 1, {
+			name = vim.fn.fnamemodify(sln_path, ":t") .. " (entire solution)",
+			path = vim.fn.fnamemodify(sln_path, ":t"),
+			guid = nil,
+		})
 
-	local installations = detect_vs_installations()
-	if #installations == 0 then
-		vim.notify(
-			"No Visual Studio installations found. Install Visual Studio with C++ workload.",
-			vim.log.levels.ERROR
-		)
-		return
-	end
+		local installations = detect_vs_installations()
+		if #installations == 0 then
+			vim.notify(
+				"No Visual Studio installations found. Install Visual Studio with C++ workload.",
+				vim.log.levels.ERROR
+			)
+			return
+		end
 
-	pick_vs_installation(installations, function(msbuild_path)
-		pick_project(msbuild_path, sln_path, projects)
+		pick_vs_installation(installations, function(msbuild_path)
+			pick_project(msbuild_path, sln_path, projects)
+		end)
 	end)
 end
 
@@ -740,29 +809,35 @@ function M.select_and_clean()
 
 	ensure_telescope()
 
-	local projects = parse_sln_projects(sln_path)
-	if #projects == 0 then
-		vim.notify("No cleanable projects found in solution", vim.log.levels.WARN)
-		return
-	end
+	pick_chain_or_new("MSClean", function(chain)
+		local sln_dir = vim.fs.dirname(sln_path)
+		save_chain(chain)
+		clean_project(chain.project, chain.msbuild_path, sln_dir, chain.config)
+	end, function()
+		local projects = parse_sln_projects(sln_path)
+		if #projects == 0 then
+			vim.notify("No cleanable projects found in solution", vim.log.levels.WARN)
+			return
+		end
 
-	table.insert(projects, 1, {
-		name = vim.fn.fnamemodify(sln_path, ":t") .. " (entire solution)",
-		path = vim.fn.fnamemodify(sln_path, ":t"),
-		guid = nil,
-	})
+		table.insert(projects, 1, {
+			name = vim.fn.fnamemodify(sln_path, ":t") .. " (entire solution)",
+			path = vim.fn.fnamemodify(sln_path, ":t"),
+			guid = nil,
+		})
 
-	local installations = detect_vs_installations()
-	if #installations == 0 then
-		vim.notify(
-			"No Visual Studio installations found. Install Visual Studio with C++ workload.",
-			vim.log.levels.ERROR
-		)
-		return
-	end
+		local installations = detect_vs_installations()
+		if #installations == 0 then
+			vim.notify(
+				"No Visual Studio installations found. Install Visual Studio with C++ workload.",
+				vim.log.levels.ERROR
+			)
+			return
+		end
 
-	pick_vs_installation(installations, function(msbuild_path)
-		pick_project_for_clean(msbuild_path, sln_path, projects)
+		pick_vs_installation(installations, function(msbuild_path)
+			pick_project_for_clean(msbuild_path, sln_path, projects)
+		end)
 	end)
 end
 
@@ -775,29 +850,35 @@ function M.select_and_rebuild()
 
 	ensure_telescope()
 
-	local projects = parse_sln_projects(sln_path)
-	if #projects == 0 then
-		vim.notify("No rebuildable projects found in solution", vim.log.levels.WARN)
-		return
-	end
+	pick_chain_or_new("MSRebuild", function(chain)
+		local sln_dir = vim.fs.dirname(sln_path)
+		save_chain(chain)
+		rebuild_project(chain.project, chain.msbuild_path, sln_dir, chain.config)
+	end, function()
+		local projects = parse_sln_projects(sln_path)
+		if #projects == 0 then
+			vim.notify("No rebuildable projects found in solution", vim.log.levels.WARN)
+			return
+		end
 
-	table.insert(projects, 1, {
-		name = vim.fn.fnamemodify(sln_path, ":t") .. " (entire solution)",
-		path = vim.fn.fnamemodify(sln_path, ":t"),
-		guid = nil,
-	})
+		table.insert(projects, 1, {
+			name = vim.fn.fnamemodify(sln_path, ":t") .. " (entire solution)",
+			path = vim.fn.fnamemodify(sln_path, ":t"),
+			guid = nil,
+		})
 
-	local installations = detect_vs_installations()
-	if #installations == 0 then
-		vim.notify(
-			"No Visual Studio installations found. Install Visual Studio with C++ workload.",
-			vim.log.levels.ERROR
-		)
-		return
-	end
+		local installations = detect_vs_installations()
+		if #installations == 0 then
+			vim.notify(
+				"No Visual Studio installations found. Install Visual Studio with C++ workload.",
+				vim.log.levels.ERROR
+			)
+			return
+		end
 
-	pick_vs_installation(installations, function(msbuild_path)
-		pick_project_for_rebuild(msbuild_path, sln_path, projects)
+		pick_vs_installation(installations, function(msbuild_path)
+			pick_project_for_rebuild(msbuild_path, sln_path, projects)
+		end)
 	end)
 end
 
@@ -842,7 +923,7 @@ function M.compile_current_file()
 	end
 
 	local sln_dir = vim.fs.dirname(sln_path)
-	local config = M.config.configuration and M.config or last_config or get_default_config(sln_path)
+	local config = M.config.configuration and M.config or (saved_chains[1] and saved_chains[1].config) or get_default_config(sln_path)
 
 	-- Make file path relative to solution directory
 	local relative_path = vim.fn.fnamemodify(filepath, ":.")
