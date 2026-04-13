@@ -4,6 +4,7 @@ CompileFlags:
     # Debug/PDB flags (build artifacts, not semantic)
     - /Zi
     - /ZI
+    - /Z7
     - /Fd*
     - /FS
     # Precompiled header output paths (clangd handles PCH differently)
@@ -16,9 +17,15 @@ CompileFlags:
     # Object/output file paths
     - /Fo*
     - /Fe*
-    # Error reporting and diagnostics format (VS-specific)
+    # Whole-program optimization (unsupported by clang)
+    - /GL
+    - /LTCG
+    # MSVC-specific flags not relevant to clangd analysis
     - /errorReport:*
     - /FC
+    - /Gm-
+    - /analyze-
+    - /sdl
     # Source file charset (clangd assumes UTF-8)
     - /source-charset:*
     - /execution-charset:*

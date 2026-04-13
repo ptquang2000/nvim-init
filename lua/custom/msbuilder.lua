@@ -42,20 +42,68 @@ end
 
 local vs_search_paths = {
 	-- VS 2022 (64-bit, in Program Files)
-	{ year = "2022", edition = "Enterprise",    path = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\MSBuild\\Current\\Bin\\MSBuild.exe" },
-	{ year = "2022", edition = "Professional",  path = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\MSBuild\\Current\\Bin\\MSBuild.exe" },
-	{ year = "2022", edition = "Community",     path = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe" },
-	{ year = "2022", edition = "BuildTools",    path = "C:\\Program Files\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe" },
+	{
+		year = "2022",
+		edition = "Enterprise",
+		path = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\MSBuild\\Current\\Bin\\MSBuild.exe",
+	},
+	{
+		year = "2022",
+		edition = "Professional",
+		path = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\MSBuild\\Current\\Bin\\MSBuild.exe",
+	},
+	{
+		year = "2022",
+		edition = "Community",
+		path = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+	},
+	{
+		year = "2022",
+		edition = "BuildTools",
+		path = "C:\\Program Files\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe",
+	},
 	-- VS 2019 (32-bit, in Program Files x86)
-	{ year = "2019", edition = "Enterprise",    path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\MSBuild\\Current\\Bin\\MSBuild.exe" },
-	{ year = "2019", edition = "Professional",  path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Professional\\MSBuild\\Current\\Bin\\MSBuild.exe" },
-	{ year = "2019", edition = "Community",     path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe" },
-	{ year = "2019", edition = "BuildTools",    path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe" },
+	{
+		year = "2019",
+		edition = "Enterprise",
+		path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\MSBuild\\Current\\Bin\\MSBuild.exe",
+	},
+	{
+		year = "2019",
+		edition = "Professional",
+		path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Professional\\MSBuild\\Current\\Bin\\MSBuild.exe",
+	},
+	{
+		year = "2019",
+		edition = "Community",
+		path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+	},
+	{
+		year = "2019",
+		edition = "BuildTools",
+		path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe",
+	},
 	-- VS 2017 (32-bit, in Program Files x86, uses 15.0 not Current)
-	{ year = "2017", edition = "Enterprise",    path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\MSBuild\\15.0\\Bin\\MSBuild.exe" },
-	{ year = "2017", edition = "Professional",  path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Professional\\MSBuild\\15.0\\Bin\\MSBuild.exe" },
-	{ year = "2017", edition = "Community",     path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\MSBuild\\15.0\\Bin\\MSBuild.exe" },
-	{ year = "2017", edition = "BuildTools",    path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\BuildTools\\MSBuild\\15.0\\Bin\\MSBuild.exe" },
+	{
+		year = "2017",
+		edition = "Enterprise",
+		path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\MSBuild\\15.0\\Bin\\MSBuild.exe",
+	},
+	{
+		year = "2017",
+		edition = "Professional",
+		path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Professional\\MSBuild\\15.0\\Bin\\MSBuild.exe",
+	},
+	{
+		year = "2017",
+		edition = "Community",
+		path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\MSBuild\\15.0\\Bin\\MSBuild.exe",
+	},
+	{
+		year = "2017",
+		edition = "BuildTools",
+		path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\BuildTools\\MSBuild\\15.0\\Bin\\MSBuild.exe",
+	},
 }
 
 local function find_msbuild()
@@ -112,8 +160,7 @@ local function parse_sln_projects(sln_path)
 
 	for _, line in ipairs(lines) do
 		local type_guid, name, path, proj_guid =
-			line:match('^Project%("{([^}]+)}"%)'
-				.. ' = "([^"]+)", "([^"]+)", "{([^}]+)}"')
+			line:match('^Project%("{([^}]+)}"%)' .. ' = "([^"]+)", "([^"]+)", "{([^}]+)}"')
 		if type_guid and name and path and proj_guid then
 			if type_guid:upper() ~= solution_folder_guid:upper() then
 				table.insert(projects, {
@@ -171,9 +218,56 @@ local function get_default_config(sln_path)
 	return { configuration = "Debug", platform = "x64" }
 end
 
-local function run_in_terminal(cmd, buf_name)
+local ms2cc_job_id = nil
+
+local function run_ms2cc(sln_dir)
+	local logfile = sln_dir .. "\\msbuild_detailed.log"
+	local output = sln_dir .. "\\compile_commands.json"
+	if vim.fn.filereadable(logfile) ~= 1 then
+		vim.notify("msbuild_detailed.log not found, skipping compile_commands.json generation", vim.log.levels.WARN)
+		return
+	end
+	if vim.fn.executable("ms2cc") ~= 1 then
+		vim.notify("ms2cc not found. Install with: cargo install ms2cc", vim.log.levels.WARN)
+		return
+	end
+	local args = { "ms2cc", "-i", logfile, "-o", output, "--no-progress" }
+	vim.notify("Generating compile_commands.json...", vim.log.levels.INFO)
+	local stderr_lines = {}
+	ms2cc_job_id = vim.fn.jobstart(args, {
+		on_stderr = function(_, data)
+			for _, line in ipairs(data) do
+				if line ~= "" then
+					table.insert(stderr_lines, line)
+				end
+			end
+		end,
+		on_exit = function(_, code)
+			ms2cc_job_id = nil
+			vim.schedule(function()
+				if code == 0 then
+					vim.fn.delete(logfile)
+					vim.notify("compile_commands.json generated successfully", vim.log.levels.INFO)
+				else
+					local msg = "ms2cc failed (exit " .. code .. ")"
+					if #stderr_lines > 0 then
+						msg = msg .. ": " .. table.concat(stderr_lines, " ")
+					end
+					vim.notify(msg, vim.log.levels.ERROR)
+				end
+			end)
+		end,
+	})
+end
+
+local function run_in_terminal(cmd, buf_name, opts)
+	opts = opts or {}
 	if is_build_running() then
 		vim.notify("A build is already running", vim.log.levels.WARN)
+		return
+	end
+	if ms2cc_job_id then
+		vim.notify("compile_commands.json generation is still running", vim.log.levels.WARN)
 		return
 	end
 	local display_parts = {}
@@ -187,11 +281,16 @@ local function run_in_terminal(cmd, buf_name)
 	vim.notify(">> " .. table.concat(display_parts, " "), vim.log.levels.INFO)
 	vim.cmd("botright vsplit")
 	vim.cmd("enew")
+	local env = vim.fn.environ()
+	env["CMAKE_EXPORT_COMPILE_COMMANDS"] = "ON"
 	local job_id = vim.fn.termopen(cmd, {
-		env = { CMAKE_EXPORT_COMPILE_COMMANDS = "1" },
-		on_exit = function()
+		env = env,
+		on_exit = function(_, exit_code)
 			active_job_id = nil
 			active_buf = nil
+			if exit_code == 0 and opts.on_success then
+				vim.schedule(opts.on_success)
+			end
 		end,
 	})
 	active_job_id = job_id
@@ -204,8 +303,10 @@ end
 local function build_project(project, msbuild_path, sln_dir, config)
 	local cores = get_build_cores()
 	local sln_file = vim.fn.glob(sln_dir .. "\\*.sln", false, true)[1]
+	local logfile = sln_dir .. "\\msbuild_detailed.log"
 	local args = {
-		msbuild_path, sln_file,
+		msbuild_path,
+		sln_file,
 		"/p:Configuration=" .. config.configuration,
 		"/p:Platform=" .. config.platform,
 		"/nologo",
@@ -216,17 +317,23 @@ local function build_project(project, msbuild_path, sln_dir, config)
 		local target = project.name:gsub("[%.%-]", "_")
 		table.insert(args, 3, "/t:" .. target)
 	end
-	local logfile = sln_dir .. "\\msbuild_detailed.log"
 	table.insert(args, "/fl")
 	table.insert(args, "/flp:logfile=" .. logfile .. ";verbosity=detailed")
-	run_in_terminal(args, "[MSBuild: " .. project.name .. "]")
+	-- Delete stale log before starting
+	vim.fn.delete(logfile)
+	run_in_terminal(args, "[MSBuild: " .. project.name .. "]", {
+		on_success = function()
+			run_ms2cc(sln_dir)
+		end,
+	})
 end
 
 local function clean_project(project, msbuild_path, sln_dir, config)
 	local cores = get_build_cores()
 	local sln_file = vim.fn.glob(sln_dir .. "\\*.sln", false, true)[1]
 	local args = {
-		msbuild_path, sln_file,
+		msbuild_path,
+		sln_file,
 		"/p:Configuration=" .. config.configuration,
 		"/p:Platform=" .. config.platform,
 		"/nologo",
@@ -244,8 +351,10 @@ end
 local function rebuild_project(project, msbuild_path, sln_dir, config)
 	local cores = get_build_cores()
 	local sln_file = vim.fn.glob(sln_dir .. "\\*.sln", false, true)[1]
+	local logfile = sln_dir .. "\\msbuild_detailed.log"
 	local args = {
-		msbuild_path, sln_file,
+		msbuild_path,
+		sln_file,
 		"/p:Configuration=" .. config.configuration,
 		"/p:Platform=" .. config.platform,
 		"/nologo",
@@ -257,10 +366,15 @@ local function rebuild_project(project, msbuild_path, sln_dir, config)
 	else
 		table.insert(args, 3, "/t:Rebuild")
 	end
-	local logfile = sln_dir .. "\\msbuild_detailed.log"
 	table.insert(args, "/fl")
 	table.insert(args, "/flp:logfile=" .. logfile .. ";verbosity=detailed")
-	run_in_terminal(args, "[MSRebuild: " .. project.name .. "]")
+	-- Delete stale log before starting
+	vim.fn.delete(logfile)
+	run_in_terminal(args, "[MSRebuild: " .. project.name .. "]", {
+		on_success = function()
+			run_ms2cc(sln_dir)
+		end,
+	})
 end
 
 local pickers, finders, conf, actions, action_state
@@ -278,7 +392,9 @@ local function select_config_and_build(project, msbuild_path, sln_path)
 	local configs = parse_sln_configs(sln_path)
 
 	if last_config then
-		move_to_front(configs, function(c) return c.configuration == last_config.configuration and c.platform == last_config.platform end)
+		move_to_front(configs, function(c)
+			return c.configuration == last_config.configuration and c.platform == last_config.platform
+		end)
 	end
 
 	if #configs == 0 then
@@ -294,32 +410,34 @@ local function select_config_and_build(project, msbuild_path, sln_path)
 		return
 	end
 
-	pickers.new({}, {
-		prompt_title = "Build Configuration",
-		finder = finders.new_table({
-			results = configs,
-			entry_maker = function(entry)
-				local display = entry.configuration .. " | " .. entry.platform
-				return {
-					value = entry,
-					display = display,
-					ordinal = display,
-				}
+	pickers
+		.new({}, {
+			prompt_title = "Build Configuration",
+			finder = finders.new_table({
+				results = configs,
+				entry_maker = function(entry)
+					local display = entry.configuration .. " | " .. entry.platform
+					return {
+						value = entry,
+						display = display,
+						ordinal = display,
+					}
+				end,
+			}),
+			sorter = conf.generic_sorter({}),
+			attach_mappings = function(prompt_bufnr, _)
+				actions.select_default:replace(function()
+					actions.close(prompt_bufnr)
+					local selection = action_state.get_selected_entry()
+					if selection then
+						last_config = selection.value
+						build_project(project, msbuild_path, sln_dir, selection.value)
+					end
+				end)
+				return true
 			end,
-		}),
-		sorter = conf.generic_sorter({}),
-		attach_mappings = function(prompt_bufnr, _)
-			actions.select_default:replace(function()
-				actions.close(prompt_bufnr)
-				local selection = action_state.get_selected_entry()
-				if selection then
-					last_config = selection.value
-					build_project(project, msbuild_path, sln_dir, selection.value)
-				end
-			end)
-			return true
-		end,
-	}):find()
+		})
+		:find()
 end
 
 local function select_config_and_clean(project, msbuild_path, sln_path)
@@ -327,7 +445,9 @@ local function select_config_and_clean(project, msbuild_path, sln_path)
 	local configs = parse_sln_configs(sln_path)
 
 	if last_config then
-		move_to_front(configs, function(c) return c.configuration == last_config.configuration and c.platform == last_config.platform end)
+		move_to_front(configs, function(c)
+			return c.configuration == last_config.configuration and c.platform == last_config.platform
+		end)
 	end
 
 	if #configs == 0 then
@@ -343,32 +463,34 @@ local function select_config_and_clean(project, msbuild_path, sln_path)
 		return
 	end
 
-	pickers.new({}, {
-		prompt_title = "Clean Configuration",
-		finder = finders.new_table({
-			results = configs,
-			entry_maker = function(entry)
-				local display = entry.configuration .. " | " .. entry.platform
-				return {
-					value = entry,
-					display = display,
-					ordinal = display,
-				}
+	pickers
+		.new({}, {
+			prompt_title = "Clean Configuration",
+			finder = finders.new_table({
+				results = configs,
+				entry_maker = function(entry)
+					local display = entry.configuration .. " | " .. entry.platform
+					return {
+						value = entry,
+						display = display,
+						ordinal = display,
+					}
+				end,
+			}),
+			sorter = conf.generic_sorter({}),
+			attach_mappings = function(prompt_bufnr, _)
+				actions.select_default:replace(function()
+					actions.close(prompt_bufnr)
+					local selection = action_state.get_selected_entry()
+					if selection then
+						last_config = selection.value
+						clean_project(project, msbuild_path, sln_dir, selection.value)
+					end
+				end)
+				return true
 			end,
-		}),
-		sorter = conf.generic_sorter({}),
-		attach_mappings = function(prompt_bufnr, _)
-			actions.select_default:replace(function()
-				actions.close(prompt_bufnr)
-				local selection = action_state.get_selected_entry()
-				if selection then
-					last_config = selection.value
-					clean_project(project, msbuild_path, sln_dir, selection.value)
-				end
-			end)
-			return true
-		end,
-	}):find()
+		})
+		:find()
 end
 
 local function select_config_and_rebuild(project, msbuild_path, sln_path)
@@ -376,7 +498,9 @@ local function select_config_and_rebuild(project, msbuild_path, sln_path)
 	local configs = parse_sln_configs(sln_path)
 
 	if last_config then
-		move_to_front(configs, function(c) return c.configuration == last_config.configuration and c.platform == last_config.platform end)
+		move_to_front(configs, function(c)
+			return c.configuration == last_config.configuration and c.platform == last_config.platform
+		end)
 	end
 
 	if #configs == 0 then
@@ -392,133 +516,149 @@ local function select_config_and_rebuild(project, msbuild_path, sln_path)
 		return
 	end
 
-	pickers.new({}, {
-		prompt_title = "Rebuild Configuration",
-		finder = finders.new_table({
-			results = configs,
-			entry_maker = function(entry)
-				local display = entry.configuration .. " | " .. entry.platform
-				return {
-					value = entry,
-					display = display,
-					ordinal = display,
-				}
+	pickers
+		.new({}, {
+			prompt_title = "Rebuild Configuration",
+			finder = finders.new_table({
+				results = configs,
+				entry_maker = function(entry)
+					local display = entry.configuration .. " | " .. entry.platform
+					return {
+						value = entry,
+						display = display,
+						ordinal = display,
+					}
+				end,
+			}),
+			sorter = conf.generic_sorter({}),
+			attach_mappings = function(prompt_bufnr, _)
+				actions.select_default:replace(function()
+					actions.close(prompt_bufnr)
+					local selection = action_state.get_selected_entry()
+					if selection then
+						last_config = selection.value
+						rebuild_project(project, msbuild_path, sln_dir, selection.value)
+					end
+				end)
+				return true
 			end,
-		}),
-		sorter = conf.generic_sorter({}),
-		attach_mappings = function(prompt_bufnr, _)
-			actions.select_default:replace(function()
-				actions.close(prompt_bufnr)
-				local selection = action_state.get_selected_entry()
-				if selection then
-					last_config = selection.value
-					rebuild_project(project, msbuild_path, sln_dir, selection.value)
-				end
-			end)
-			return true
-		end,
-	}):find()
+		})
+		:find()
 end
 
 local function pick_project(msbuild_path, sln_path, projects)
 	if last_project then
-		move_to_front(projects, function(p) return p.name == last_project.name end)
+		move_to_front(projects, function(p)
+			return p.name == last_project.name
+		end)
 	end
 
-	pickers.new({}, {
-		prompt_title = "Build Project",
-		finder = finders.new_table({
-			results = projects,
-			entry_maker = function(entry)
-				return {
-					value = entry,
-					display = entry.name,
-					ordinal = entry.name,
-				}
+	pickers
+		.new({}, {
+			prompt_title = "Build Project",
+			finder = finders.new_table({
+				results = projects,
+				entry_maker = function(entry)
+					return {
+						value = entry,
+						display = entry.name,
+						ordinal = entry.name,
+					}
+				end,
+			}),
+			sorter = conf.generic_sorter({}),
+			attach_mappings = function(prompt_bufnr, _)
+				actions.select_default:replace(function()
+					actions.close(prompt_bufnr)
+					local selection = action_state.get_selected_entry()
+					if selection then
+						last_project = selection.value
+						select_config_and_build(selection.value, msbuild_path, sln_path)
+					end
+				end)
+				return true
 			end,
-		}),
-		sorter = conf.generic_sorter({}),
-		attach_mappings = function(prompt_bufnr, _)
-			actions.select_default:replace(function()
-				actions.close(prompt_bufnr)
-				local selection = action_state.get_selected_entry()
-				if selection then
-					last_project = selection.value
-					select_config_and_build(selection.value, msbuild_path, sln_path)
-				end
-			end)
-			return true
-		end,
-	}):find()
+		})
+		:find()
 end
 
 local function pick_project_for_clean(msbuild_path, sln_path, projects)
 	if last_project then
-		move_to_front(projects, function(p) return p.name == last_project.name end)
+		move_to_front(projects, function(p)
+			return p.name == last_project.name
+		end)
 	end
 
-	pickers.new({}, {
-		prompt_title = "Clean Project",
-		finder = finders.new_table({
-			results = projects,
-			entry_maker = function(entry)
-				return {
-					value = entry,
-					display = entry.name,
-					ordinal = entry.name,
-				}
+	pickers
+		.new({}, {
+			prompt_title = "Clean Project",
+			finder = finders.new_table({
+				results = projects,
+				entry_maker = function(entry)
+					return {
+						value = entry,
+						display = entry.name,
+						ordinal = entry.name,
+					}
+				end,
+			}),
+			sorter = conf.generic_sorter({}),
+			attach_mappings = function(prompt_bufnr, _)
+				actions.select_default:replace(function()
+					actions.close(prompt_bufnr)
+					local selection = action_state.get_selected_entry()
+					if selection then
+						last_project = selection.value
+						select_config_and_clean(selection.value, msbuild_path, sln_path)
+					end
+				end)
+				return true
 			end,
-		}),
-		sorter = conf.generic_sorter({}),
-		attach_mappings = function(prompt_bufnr, _)
-			actions.select_default:replace(function()
-				actions.close(prompt_bufnr)
-				local selection = action_state.get_selected_entry()
-				if selection then
-					last_project = selection.value
-					select_config_and_clean(selection.value, msbuild_path, sln_path)
-				end
-			end)
-			return true
-		end,
-	}):find()
+		})
+		:find()
 end
 
 local function pick_project_for_rebuild(msbuild_path, sln_path, projects)
 	if last_project then
-		move_to_front(projects, function(p) return p.name == last_project.name end)
+		move_to_front(projects, function(p)
+			return p.name == last_project.name
+		end)
 	end
 
-	pickers.new({}, {
-		prompt_title = "Rebuild Project",
-		finder = finders.new_table({
-			results = projects,
-			entry_maker = function(entry)
-				return {
-					value = entry,
-					display = entry.name,
-					ordinal = entry.name,
-				}
+	pickers
+		.new({}, {
+			prompt_title = "Rebuild Project",
+			finder = finders.new_table({
+				results = projects,
+				entry_maker = function(entry)
+					return {
+						value = entry,
+						display = entry.name,
+						ordinal = entry.name,
+					}
+				end,
+			}),
+			sorter = conf.generic_sorter({}),
+			attach_mappings = function(prompt_bufnr, _)
+				actions.select_default:replace(function()
+					actions.close(prompt_bufnr)
+					local selection = action_state.get_selected_entry()
+					if selection then
+						last_project = selection.value
+						select_config_and_rebuild(selection.value, msbuild_path, sln_path)
+					end
+				end)
+				return true
 			end,
-		}),
-		sorter = conf.generic_sorter({}),
-		attach_mappings = function(prompt_bufnr, _)
-			actions.select_default:replace(function()
-				actions.close(prompt_bufnr)
-				local selection = action_state.get_selected_entry()
-				if selection then
-					last_project = selection.value
-					select_config_and_rebuild(selection.value, msbuild_path, sln_path)
-				end
-			end)
-			return true
-		end,
-	}):find()
+		})
+		:find()
 end
 
 local function pick_vs_installation(installations, callback)
 	if last_msbuild_path then
-		move_to_front(installations, function(inst) return inst.msbuild_path == last_msbuild_path end)
+		move_to_front(installations, function(inst)
+			return inst.msbuild_path == last_msbuild_path
+		end)
 	end
 
 	if #installations == 1 then
@@ -527,31 +667,33 @@ local function pick_vs_installation(installations, callback)
 		return
 	end
 
-	pickers.new({}, {
-		prompt_title = "Select Visual Studio Version",
-		finder = finders.new_table({
-			results = installations,
-			entry_maker = function(entry)
-				return {
-					value = entry,
-					display = entry.name,
-					ordinal = entry.name,
-				}
+	pickers
+		.new({}, {
+			prompt_title = "Select Visual Studio Version",
+			finder = finders.new_table({
+				results = installations,
+				entry_maker = function(entry)
+					return {
+						value = entry,
+						display = entry.name,
+						ordinal = entry.name,
+					}
+				end,
+			}),
+			sorter = conf.generic_sorter({}),
+			attach_mappings = function(prompt_bufnr, _)
+				actions.select_default:replace(function()
+					actions.close(prompt_bufnr)
+					local selection = action_state.get_selected_entry()
+					if selection then
+						last_msbuild_path = selection.value.msbuild_path
+						callback(selection.value.msbuild_path)
+					end
+				end)
+				return true
 			end,
-		}),
-		sorter = conf.generic_sorter({}),
-		attach_mappings = function(prompt_bufnr, _)
-			actions.select_default:replace(function()
-				actions.close(prompt_bufnr)
-				local selection = action_state.get_selected_entry()
-				if selection then
-					last_msbuild_path = selection.value.msbuild_path
-					callback(selection.value.msbuild_path)
-				end
-			end)
-			return true
-		end,
-	}):find()
+		})
+		:find()
 end
 
 function M.select_and_build()
@@ -577,7 +719,10 @@ function M.select_and_build()
 
 	local installations = detect_vs_installations()
 	if #installations == 0 then
-		vim.notify("No Visual Studio installations found. Install Visual Studio with C++ workload.", vim.log.levels.ERROR)
+		vim.notify(
+			"No Visual Studio installations found. Install Visual Studio with C++ workload.",
+			vim.log.levels.ERROR
+		)
 		return
 	end
 
@@ -609,7 +754,10 @@ function M.select_and_clean()
 
 	local installations = detect_vs_installations()
 	if #installations == 0 then
-		vim.notify("No Visual Studio installations found. Install Visual Studio with C++ workload.", vim.log.levels.ERROR)
+		vim.notify(
+			"No Visual Studio installations found. Install Visual Studio with C++ workload.",
+			vim.log.levels.ERROR
+		)
 		return
 	end
 
@@ -641,7 +789,10 @@ function M.select_and_rebuild()
 
 	local installations = detect_vs_installations()
 	if #installations == 0 then
-		vim.notify("No Visual Studio installations found. Install Visual Studio with C++ workload.", vim.log.levels.ERROR)
+		vim.notify(
+			"No Visual Studio installations found. Install Visual Studio with C++ workload.",
+			vim.log.levels.ERROR
+		)
 		return
 	end
 
@@ -656,43 +807,12 @@ function M.generate_compile_commands()
 		vim.notify("No .sln file found in " .. vim.fn.getcwd(), vim.log.levels.ERROR)
 		return
 	end
-
-	if vim.fn.executable("ms2cc") ~= 1 then
-		vim.notify("ms2cc not found. Install with: cargo install ms2cc", vim.log.levels.ERROR)
+	if ms2cc_job_id then
+		vim.notify("compile_commands.json generation is already running", vim.log.levels.WARN)
 		return
 	end
-
 	local sln_dir = vim.fs.dirname(sln_path)
-	local logfile = sln_dir .. "\\msbuild_detailed.log"
-	local output = sln_dir .. "\\compile_commands.json"
-
-	if vim.fn.filereadable(logfile) ~= 1 then
-		vim.notify("msbuild_detailed.log not found. Run :MSBuild first with detailed logging.", vim.log.levels.ERROR)
-		return
-	end
-
-	local ms2cc_cmd = "ms2cc -i '" .. logfile .. "' -o '" .. output .. "' --overwrite"
-	local ps_cmd = 'Write-Host ">> ' .. ms2cc_cmd:gsub("'", "''") .. '";'
-		.. " " .. ms2cc_cmd
-		.. "; Remove-Item '" .. logfile .. "'"
-		.. '; Write-Host "compile_commands.json generated successfully" -ForegroundColor Green'
-
-	if is_build_running() then
-		vim.notify("A build is already running", vim.log.levels.WARN)
-		return
-	end
-	vim.cmd("botright vsplit")
-	vim.cmd("enew")
-	local job_id = vim.fn.termopen({ "pwsh", "-NoLogo", "-NoProfile", "-Command", ps_cmd }, {
-		on_exit = function()
-			active_job_id = nil
-			active_buf = nil
-		end,
-	})
-	active_job_id = job_id
-	active_buf = vim.api.nvim_get_current_buf()
-	vim.cmd("normal! G")
-	vim.cmd("startinsert")
+	run_ms2cc(sln_dir)
 end
 
 function M.compile_current_file()
@@ -733,7 +853,8 @@ function M.compile_current_file()
 
 	local filename = vim.fn.fnamemodify(filepath, ":t")
 	local args = {
-		msbuild_path, sln_path,
+		msbuild_path,
+		sln_path,
 		"/p:Configuration=" .. config.configuration,
 		"/p:Platform=" .. config.platform,
 		"/p:SelectedFiles=" .. relative_path,
@@ -751,10 +872,20 @@ M._parse_sln_configs = parse_sln_configs
 M._get_default_config = get_default_config
 
 -- User commands
-vim.api.nvim_create_user_command("MSBuild", function() M.select_and_build() end, { desc = "MSBuild: Build project" })
-vim.api.nvim_create_user_command("MSClean", function() M.select_and_clean() end, { desc = "MSBuild: Clean project" })
-vim.api.nvim_create_user_command("MSRebuild", function() M.select_and_rebuild() end, { desc = "MSBuild: Rebuild project" })
-vim.api.nvim_create_user_command("MSCompile", function() M.compile_current_file() end, { desc = "MSBuild: Compile current file" })
-vim.api.nvim_create_user_command("MSGenerate", function() M.generate_compile_commands() end, { desc = "MSBuild: Generate compile_commands.json" })
+vim.api.nvim_create_user_command("MSBuild", function()
+	M.select_and_build()
+end, { desc = "MSBuild: Build project" })
+vim.api.nvim_create_user_command("MSClean", function()
+	M.select_and_clean()
+end, { desc = "MSBuild: Clean project" })
+vim.api.nvim_create_user_command("MSRebuild", function()
+	M.select_and_rebuild()
+end, { desc = "MSBuild: Rebuild project" })
+vim.api.nvim_create_user_command("MSCompile", function()
+	M.compile_current_file()
+end, { desc = "MSBuild: Compile current file" })
+vim.api.nvim_create_user_command("MSGenerate", function()
+	M.generate_compile_commands()
+end, { desc = "MSBuild: Generate compile_commands.json" })
 
 return M

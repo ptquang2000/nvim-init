@@ -63,3 +63,12 @@ vim.lsp.config["clangd"] = {
 }
 
 require("custom.msbuilder")
+
+-- Override format behavior: no format-on-save, <leader>f = format selection only
+require("conform").setup({
+	format_on_save = false,
+})
+vim.keymap.set("n", "<leader>f", function() end, { desc = "Disabled: use visual selection" })
+vim.keymap.set("v", "<leader>f", function()
+	require("conform").format({ bufnr = 0 })
+end, { desc = "Format selection" })
