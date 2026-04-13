@@ -331,9 +331,9 @@ local function build_project(project, msbuild_path, sln_dir, config)
 		"/nologo",
 		"/m:" .. cores,
 	}
-	-- For individual projects, add /t:ProjectName (replace . and - with _)
+	-- For individual projects, use relative path from .sln (strip .vcxproj, replace .- with _)
 	if project.guid then
-		local target = project.name:gsub("[%.%-]", "_")
+		local target = project.path:gsub("%.vcxproj$", ""):gsub("[%.%-]", "_")
 		table.insert(args, 3, "/t:" .. target)
 	end
 	table.insert(args, "/fl")
@@ -359,7 +359,7 @@ local function clean_project(project, msbuild_path, sln_dir, config)
 		"/m:" .. cores,
 	}
 	if project.guid then
-		local target = project.name:gsub("[%.%-]", "_") .. ":Clean"
+		local target = project.path:gsub("%.vcxproj$", ""):gsub("[%.%-]", "_") .. ":Clean"
 		table.insert(args, 3, "/t:" .. target)
 	else
 		table.insert(args, 3, "/t:Clean")
@@ -380,7 +380,7 @@ local function rebuild_project(project, msbuild_path, sln_dir, config)
 		"/m:" .. cores,
 	}
 	if project.guid then
-		local target = project.name:gsub("[%.%-]", "_") .. ":Rebuild"
+		local target = project.path:gsub("%.vcxproj$", ""):gsub("[%.%-]", "_") .. ":Rebuild"
 		table.insert(args, 3, "/t:" .. target)
 	else
 		table.insert(args, 3, "/t:Rebuild")
