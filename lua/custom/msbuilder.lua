@@ -334,6 +334,10 @@ local function build_project(project, msbuild_path, sln_dir, config)
 		"/nologo",
 		"/m:" .. cores,
 	}
+	-- When building .vcxproj directly, pass SolutionDir so $(SolutionDir) resolves
+	if project.guid then
+		table.insert(args, "/p:SolutionDir=" .. sln_dir .. "\\")
+	end
 	table.insert(args, "/fl")
 	table.insert(args, "/flp:logfile=" .. logfile .. ";verbosity=detailed")
 	-- Delete stale log before starting
@@ -360,6 +364,9 @@ local function clean_project(project, msbuild_path, sln_dir, config)
 		"/nologo",
 		"/m:" .. cores,
 	}
+	if project.guid then
+		table.insert(args, "/p:SolutionDir=" .. sln_dir .. "\\")
+	end
 	run_in_terminal(args, "[MSClean: " .. project.name .. "]", { cwd = sln_dir })
 end
 
@@ -378,6 +385,9 @@ local function rebuild_project(project, msbuild_path, sln_dir, config)
 		"/nologo",
 		"/m:" .. cores,
 	}
+	if project.guid then
+		table.insert(args, "/p:SolutionDir=" .. sln_dir .. "\\")
+	end
 	table.insert(args, "/fl")
 	table.insert(args, "/flp:logfile=" .. logfile .. ";verbosity=detailed")
 	-- Delete stale log before starting
