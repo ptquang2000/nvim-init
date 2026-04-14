@@ -56,7 +56,7 @@ local solution_folder_guid = "2150E333-8FDC-42A3-9474-1A3956D46DE8"
 
 local function get_build_cores()
 	local cpus = #vim.loop.cpu_info()
-	return math.max(1, math.floor(cpus / 2))
+	return math.max(1, math.floor(cpus / 3))
 end
 
 local vs_search_paths = {

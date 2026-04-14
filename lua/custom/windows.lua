@@ -2,40 +2,10 @@ if vim.fn.has("win32") ~= 1 then
 	return
 end
 
--- remap
-vim.keymap.set({ "n", "t" }, "<C-b>c", function()
-	vim.cmd("tabnew")
-	vim.cmd.term()
-end)
-for i = 1, 9 do
-	vim.keymap.set({ "n", "t" }, "<C-b>" .. i, function()
-		if i >= 1 and i <= #vim.api.nvim_list_tabpages() then
-			vim.cmd("tabnext " .. i)
-		end
-	end)
-end
-vim.keymap.set({ "n", "t" }, "<C-b>0", function()
-	if 10 == #vim.api.nvim_list_tabpages() then
-		vim.cmd("tabnext 10")
-	end
-end)
-
-vim.api.nvim_create_autocmd("TermOpen", {
-	group = vim.api.nvim_create_augroup("custom-term-open", { clear = true }),
-	callback = function()
-		local bufnr = vim.api.nvim_get_current_buf()
-		vim.keymap.set("t", "<C-b>[", "<C-\\><C-n>", { buffer = bufnr })
-		vim.keymap.set("t", "<C-b>]", "<C-v>", { buffer = bufnr })
-		vim.keymap.set("n", "q", function()
-			if vim.bo[bufnr].buftype == "terminal" then
-				vim.cmd("startinsert")
-			end
-		end, { buffer = bufnr })
-		vim.cmd("startinsert")
-	end,
-})
-
 -- set
+vim.opt.tabstop = 2
+vim.opt.shiftwidth = 2
+vim.opt.softtabstop = 2
 vim.opt.shell = "pwsh.exe"
 vim.opt.shellcmdflag = "-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command"
 vim.opt.shellquote = '"'
@@ -53,9 +23,11 @@ vim.lsp.config["clangd"] = {
 	cmd = {
 		"clangd",
 		"--background-index",
-		"--header-insertion=never",
+		-- "--header-insertion=never",
 		"--completion-style=detailed",
 		"--function-arg-placeholders=false",
+		"--clang-tidy",
+		-- "--query-driver=C:\\BuildTools\\VC\\Tools\\MSVC\\14.16.27023\\bin\\Hostx86\\x86\\cl.exe",
 	},
 	filetypes = { "c", "cpp", "objc", "objcpp" },
 	root_markers = { "compile_commands.json", ".clangd", ".git" },
@@ -72,3 +44,13 @@ vim.keymap.set("n", "<leader>f", function() end, { desc = "Disabled: use visual 
 vim.keymap.set("v", "<leader>f", function()
 	require("conform").format({ bufnr = 0 })
 end, { desc = "Format selection" })
+
+-- Override <C-f>: on Linux this launches `tmux neww tmux-sessionizer`.
+-- On Windows we use psmux + the PowerShell-based psmux-sessionizer.ps1
+-- (linked into Documents\PowerShell by setup.bat). jobstart avoids the
+-- quoting pitfalls of running `:silent !...` through the custom pwsh
+-- shellcmdflag.
+local sessionizer = vim.fn.expand("$USERPROFILE/Documents/PowerShell/psmux-sessionizer.ps1")
+vim.keymap.set("n", "<C-f>", function()
+	vim.fn.jobstart({ "psmux", "neww", "pwsh", "-NoLogo", "-NoProfile", "-File", sessionizer }, { detach = true })
+end, { desc = "Open psmux sessionizer" })

@@ -1,5 +1,13 @@
 CompileFlags:
   Compiler: cl
+  Add:
+    - -fms-extensions
+    - -fms-compatibility
+    - -fdelayed-template-parsing
+    - -D_HAS_CXX17=1
+    - -D_HAS_CXX20=1
+    - -D_HAS_CXX23=1
+    # - /std:c++latest
   Remove:
     # Debug/PDB flags (build artifacts, not semantic)
     - /Zi
