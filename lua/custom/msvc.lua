@@ -15,10 +15,12 @@ require("msvc").setup({
 			outdir = "bin",
 			builddir = "bin/cmake",
 		},
+		default_profile = "grsc",
 	},
 	profiles = {
-		default = {
+		grsc = {
 			vs_version = "latest",
+			configuration = "Release",
 			arch = "x64",
 			host_arch = "x64",
 			msbuild_args = { "/nologo", "/v:minimal" },
@@ -26,13 +28,17 @@ require("msvc").setup({
 			vcvars_ver = "14.16",
 			winsdk = "10.0.17763.0",
 		},
-		grsc = {
-			configuration = "Release",
-			platform = "Win32",
-			arch = "x86",
+		grsc_arm64 = {
+			platform = "ARM64",
+			arch = "arm64",
 		},
 		driver = {
 			configuration = "Debug",
+			platform = "x64",
+			arch = "x64",
+		},
+		fsdwd = {
+			configuration = "release-static",
 			platform = "x64",
 			arch = "x64",
 		},
