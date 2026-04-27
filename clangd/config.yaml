@@ -1,3 +1,7 @@
+# Global clangd config (managed via dotfiles).
+# windows.lua mirrors this file to %LocalAppData%\clangd\config.yaml on nvim startup.
+#
+# Document 1: Global MSVC/clang-cl compatibility (applies to all C/C++ TUs).
 CompileFlags:
   Compiler: cl
   Add:
@@ -5,6 +9,13 @@ CompileFlags:
     - -fms-compatibility
     - -fdelayed-template-parsing
     - -D_HAS_CXX17=1
+    - -D_CRT_SECURE_NO_WARNINGS
+    # Quiet MSVC/SDK noise we can't fix
+    - -Wno-microsoft
+    - -Wno-pragma-pack
+    - -Wno-ignored-attributes
+    - -Wno-unknown-pragmas
+    - -Wno-unused-command-line-argument
     # - /std:c++latest
   Remove:
     # Debug/PDB flags (build artifacts, not semantic)
@@ -29,9 +40,32 @@ CompileFlags:
     # MSVC-specific flags not relevant to clangd analysis
     - /errorReport:*
     - /FC
+    - /Gm
     - /Gm-
+    - /JMC
+    - /analyze
     - /analyze-
+    - /analyze:*
+    - /external:*
+    - /diagnostics:*
     - /sdl
+    - /Qspectre
+    - /permissive-
     # Source file charset (clangd assumes UTF-8)
     - /source-charset:*
     - /execution-charset:*
+
+---
+# Document 2: Windows Driver Kit kernel-mode include paths.
+# msbuild-extractor-sample does not emit $(KM_IncludePath), so kernel headers
+# like fltkernel.h are missing from compile_commands.json. Re-add as system
+# includes (suppresses WDK header warnings under clang).
+If:
+  PathMatch: ".*[/\\\\]filter-driver[/\\\\]src[/\\\\](libwaacd|libwadcd|common)[/\\\\].*"
+CompileFlags:
+  # Use /imsvc (clang-cl) since the CDB invokes clang in cl driver mode;
+  # plain -isystem is silently dropped by the cl driver.
+  Add:
+    - /imsvcC:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/km
+    - /imsvcC:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/km/crt
+    - /imsvcC:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/shared
