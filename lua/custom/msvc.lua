@@ -4,44 +4,32 @@ end
 
 require("msvc").setup({
 	settings = {
-		echo_command = false,
+		default_profile = "grsc",
 		build_on_save = false,
 		open_quickfix = true,
-		qf_height = 10,
-		auto_select_sln = true,
-		search_depth = 4,
-		cache_env = true,
-		compile_commands = {
-			outdir = "bin",
-			builddir = "bin/cmake",
-		},
-		default_profile = "grsc",
+	},
+	default = {
+		msbuild_args = { "/nologo", "/v:minimal" },
+		jobs = 6,
+		arch = "x64",
+		vcvars_ver = "14.16",
+		winsdk = "10.0.17763.0",
+		compile_commands = { outdir = "bin" },
 	},
 	profiles = {
 		grsc = {
-			vs_version = "latest",
 			configuration = "Release",
-			arch = "x64",
-			host_arch = "x64",
-			msbuild_args = { "/nologo", "/v:minimal" },
-			jobs = 6,
-			vcvars_ver = "14.16",
-			winsdk = "10.0.17763.0",
+			platform = "Win32",
+			compile_commands = { builddir = "bin/cmake" },
 		},
 		grsc_arm64 = {
+			configuration = "Release",
 			platform = "ARM64",
 			arch = "arm64",
+			compile_commands = { builddir = "bin/cmake" },
 		},
-		driver = {
-			configuration = "Debug",
-			platform = "x64",
-			arch = "x64",
-		},
-		fsdwd = {
-			configuration = "release-static",
-			platform = "x64",
-			arch = "x64",
-		},
+		driver = { configuration = "Debug", platform = "x64", vs_version = "2017" },
+		fsdwd = { configuration = "release-static", platform = "x64" },
 	},
 })
 
@@ -56,5 +44,5 @@ vim.keymap.set("n", "<leader>mr", msvc("rebuild"), { desc = "Msvc: rebuild" })
 vim.keymap.set("n", "<leader>mc", msvc("clean"), { desc = "Msvc: clean" })
 vim.keymap.set("n", "<leader>mx", msvc("cancel"), { desc = "Msvc: cancel" })
 vim.keymap.set("n", "<leader>ms", msvc("status"), { desc = "Msvc: status" })
-vim.keymap.set("n", "<leader>ml", msvc("build_log"), { desc = "Msvc: build log" })
+vim.keymap.set("n", "<leader>ml", msvc("log"), { desc = "Msvc: build log" })
 vim.keymap.set("n", "<leader>md", msvc("discover"), { desc = "Msvc: discover solution" })

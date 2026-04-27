@@ -37,11 +37,26 @@ vim.lsp.config["clangd"] = {
 vim.pack.add({
 	{ src = "https://github.com/ptquang2000/nvim-msvc.git" },
 })
+-- vim.opt.runtimepath:prepend("C:/Users/quang.phan/work/nvim-msvc")
 require("custom.msvc")
 
--- ── conform.nvim: format on selection only ──────────────────────────────────
-require("conform").setup({ format_on_save = false })
-vim.keymap.set("n", "<leader>f", function() end, { desc = "Disabled: use visual selection" })
+-- ── conform.nvim: format on selection only for C/C++ filetypes ─────────────
+local cpp_ft = { c = true, cpp = true, objc = true, objcpp = true }
+require("conform").setup({
+	format_on_save = function(bufnr)
+		if cpp_ft[vim.bo[bufnr].filetype] then
+			return nil
+		end
+		return { timeout_ms = 5000, lsp_format = "fallback" }
+	end,
+})
+vim.keymap.set("n", "<leader>f", function()
+	if cpp_ft[vim.bo[0].filetype] then
+		vim.notify("Full-file format disabled for C/C++; use visual selection", vim.log.levels.INFO)
+		return
+	end
+	require("conform").format({ bufnr = 0 })
+end, { desc = "Format buffer (disabled for C/C++)" })
 vim.keymap.set("v", "<leader>f", function()
 	require("conform").format({ bufnr = 0 })
 end, { desc = "Format selection" })
