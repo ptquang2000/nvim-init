@@ -48,6 +48,16 @@ vim.lsp.config["lua_ls"] = {
 	},
 }
 
+vim.lsp.config["rust_analyzer"] = {
+	settings = {
+		["rust-analyzer"] = {
+			diagnostics = {
+				enable = false,
+			},
+		},
+	},
+}
+
 require("mason-lspconfig").setup({
 	ensure_installed = { "lua_ls", "gopls", "rust_analyzer", "clangd", "pyright" },
 	automatic_enable = true,
