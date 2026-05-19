@@ -10,6 +10,7 @@ CompileFlags:
     - -fdelayed-template-parsing
     - -D_HAS_CXX17=1
     - -D_CRT_SECURE_NO_WARNINGS
+    - -DWIN32
     # Quiet MSVC/SDK noise we can't fix
     - -Wno-microsoft
     - -Wno-pragma-pack
@@ -69,3 +70,16 @@ CompileFlags:
     - /imsvcC:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/km
     - /imsvcC:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/km/crt
     - /imsvcC:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/shared
+
+---
+# Document 3: Windows MSVC target/architecture for grsc-gsdk-win32 and filter-driver.
+# Sets x86_64 Windows MSVC target so clang predefines _M_X64/_M_AMD64 and
+# winnt.h stops erroring with "No Target Architecture".
+If:
+  PathMatch: ".*[/\\\\](grsc-gsdk-win32|filter-driver)[/\\\\].*"
+CompileFlags:
+  Add:
+    - --target=x86_64-pc-windows-msvc
+    - -D_AMD64_
+    - -D_M_X64
+    - -D_M_AMD64

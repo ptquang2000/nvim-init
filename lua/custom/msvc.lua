@@ -14,22 +14,21 @@ require("msvc").setup({
 		arch = "x64",
 		vcvars_ver = "14.16",
 		winsdk = "10.0.17763.0",
-		compile_commands = { outdir = "bin" },
 	},
 	profiles = {
 		grsc = {
 			configuration = "Release",
 			platform = "Win32",
-			compile_commands = { builddir = "bin/cmake" },
+			compile_commands = { outdir = "bin", builddir = "bin/cmake" },
 		},
 		grsc_arm64 = {
 			configuration = "Release",
 			platform = "ARM64",
 			arch = "arm64",
-			compile_commands = { builddir = "bin/cmake" },
+			compile_commands = { outdir = "bin", builddir = "bin/cmake" },
 		},
 		driver = { configuration = "Debug", platform = "x64", vs_version = "2017" },
-		fsdwd = { configuration = "release-static", platform = "x64" },
+		fsdwd = { configuration = "release_static", platform = "x64", vs_version = "2017" },
 	},
 })
 
