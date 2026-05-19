@@ -13,4 +13,5 @@ treesitter.install({
 	"markdown",
 	"markdown_inline",
 	"latex",
+	"python",
 })

@@ -58,6 +58,18 @@ vim.lsp.config["rust_analyzer"] = {
 	},
 }
 
+vim.lsp.config["pyright"] = {
+	settings = {
+		["python"] = {
+			analysis = {
+				autoSearchPaths = true,
+				diagnosticMode = "openFilesOnly",
+				useLibraryCodeForTypes = true,
+			},
+		},
+	},
+}
+
 require("mason-lspconfig").setup({
 	ensure_installed = { "lua_ls", "gopls", "rust_analyzer", "clangd", "pyright" },
 	automatic_enable = true,
