@@ -5,10 +5,8 @@ require("custom.lsp")
 require("custom.telescope")
 require("custom.conform")
 require("custom.treesitter")
-require("custom.markview")
 require("custom.windows")
 require("custom.harpoon")
-require("custom.vimtex")
 
 vim.api.nvim_create_autocmd("TextYankPost", {
 	group = vim.api.nvim_create_augroup("HighlightYank", {}),
