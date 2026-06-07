@@ -82,9 +82,16 @@ vim.api.nvim_create_autocmd("LspAttach", {
 			mode = mode or "n"
 			vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = "LSP: " .. desc })
 		end
-		map("gd", vim.lsp.buf.definition, "[G]oto [d]efinition")
+		map("gd", vim.lsp.buf.definition, "[G]oto [D]efinition")
 		map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
 		map("gi", vim.lsp.buf.implementation, "[G]oto [I]mplementation")
-		map("grn", vim.lsp.buf.rename, "[G]o [R]ename")
+		map("gy", vim.lsp.buf.type_definition, "[G]oto t[Y]pe definition")
+		map("K", vim.lsp.buf.hover, "[H]over documentation")
+		map("gs", vim.lsp.buf.signature_help, "[S]ignature help", { "n", "i" })
+		map("gR", vim.lsp.buf.references, "[R]eferences")
+		map("grn", vim.lsp.buf.rename, "[R]e[N]ame symbol")
+		map("ga", vim.lsp.buf.code_action, "Code [A]ction", { "n", "v" })
+		map("gci", vim.lsp.buf.incoming_calls, "[I]ncoming calls")
+		map("gco", vim.lsp.buf.outgoing_calls, "[O]utgoing calls")
 	end,
 })
