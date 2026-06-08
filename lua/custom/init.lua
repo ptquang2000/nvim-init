@@ -7,6 +7,7 @@ require("custom.conform")
 require("custom.treesitter")
 require("custom.windows")
 require("custom.harpoon")
+require("custom.fugitive")
 
 vim.api.nvim_create_autocmd("TextYankPost", {
 	group = vim.api.nvim_create_augroup("HighlightYank", {}),
