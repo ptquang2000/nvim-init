@@ -9,6 +9,10 @@ local function git_cwd()
 	local dir
 	if vim.bo.filetype == "netrw" then
 		dir = vim.b.netrw_curdir or vim.fn.expand("%:p"):gsub("[/\\]$", "")
+	elseif file:match("^fugitive://") then
+		local git_dir = file:match("^fugitive://(.-)//") or vim.b.fugitive_repo
+		dir = git_dir and vim.fn.systemlist("git --git-dir=" .. vim.fn.shellescape(git_dir) .. " rev-parse --show-toplevel")[1]
+		dir = dir or vim.fn.getcwd()
 	elseif vim.fn.isdirectory(file) == 1 then
 		dir = file:gsub("[/\\]$", "")
 	elseif file ~= "" then
