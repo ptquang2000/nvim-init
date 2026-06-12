@@ -1,5 +1,7 @@
 vim.keymap.set("n", "<leader>g", function()
-	vim.fn.jobstart({ "git", "fetch", "--all", "--jobs=0" })
+	local root = vim.fn.FugitiveWorkTree()
+	if root == "" then root = nil end
+	vim.fn.jobstart({ "git", "fetch", "--all", "--jobs=0" }, { cwd = root })
 	vim.cmd.Git()
 end, { desc = "Git" })
 local function is_netrw()
