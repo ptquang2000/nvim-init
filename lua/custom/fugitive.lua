@@ -22,4 +22,18 @@ vim.keymap.set("n", "<leader>gL", function()
 end, { desc = "Git Log Graph (file)" })
 vim.keymap.set("n", "<leader>gb", "<cmd>G blame<CR>", { desc = "Git Blame" })
 vim.keymap.set("n", "<leader>gm", "<cmd>G submodule update --init --recursive<CR>", { desc = "Git Submodule Update" })
-vim.keymap.set("n", "<leader>gd", function() end, { desc = "Git Diff Commit with Previous" })
+vim.keymap.set("n", "<leader>gd", function()
+  local ft = vim.bo.filetype
+  local commit
+  if ft == "netrw" then
+    vim.cmd("edit " .. vim.fn.expand("<cfile>"))
+    commit = "HEAD"
+  elseif ft == "fugitiveblame" or ft == "fugitive" then
+    commit = vim.fn.expand("<cword>")
+    vim.cmd("close!")
+  else
+    local blame = vim.fn.system("git blame -L " .. vim.fn.line(".") .. "," .. vim.fn.line(".") .. " " .. vim.fn.expand("%"))
+    commit = blame:match("^(%w+)")
+  end
+  vim.cmd("Gvdiffsplit " .. commit .. "~1")
+end, { desc = "Git Diff Commit with Previous" })
