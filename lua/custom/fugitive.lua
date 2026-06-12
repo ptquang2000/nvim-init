@@ -23,17 +23,32 @@ end, { desc = "Git Log Graph (file)" })
 vim.keymap.set("n", "<leader>gb", "<cmd>G blame<CR>", { desc = "Git Blame" })
 vim.keymap.set("n", "<leader>gm", "<cmd>G submodule update --init --recursive<CR>", { desc = "Git Submodule Update" })
 vim.keymap.set("n", "<leader>gd", function()
-  local ft = vim.bo.filetype
-  local commit
-  if ft == "netrw" then
-    vim.cmd("edit " .. vim.fn.expand("<cfile>"))
-    commit = "HEAD"
-  elseif ft == "fugitiveblame" or ft == "fugitive" or ft == "git" then
-    commit = vim.fn.expand("<cword>")
-    vim.cmd("close!")
-  else
-    local blame = vim.fn.system("git blame -L " .. vim.fn.line(".") .. "," .. vim.fn.line(".") .. " " .. vim.fn.expand("%"))
-    commit = blame:match("^(%w+)")
-  end
-  vim.cmd("Gvdiffsplit " .. commit .. "~1")
+	local ft = vim.bo.filetype
+	local commit = "HEAD"
+	if ft == "fugitiveblame" or ft == "fugitive" or ft == "git" then
+		commit = vim.fn.expand("<cword>")
+		vim.cmd("close!")
+	end
+	if not is_netrw() then
+		vim.cmd("Gvdiffsplit " .. commit .. "~1")
+		return
+	end
+	local git_root = vim.fn.FugitiveWorkTree()
+	if git_root == "" then
+		vim.notify("Not a git repository", vim.log.levels.WARN)
+		return
+	end
+	local result = vim.fn.FugitiveExecute({ "diff", "--name-only", commit .. "~1", commit })
+	if result.exit_status ~= 0 or #result.stdout == 0 then
+		vim.notify("No changed files found", vim.log.levels.INFO)
+		return
+	end
+	local qflist = {}
+	for _, fname in ipairs(result.stdout) do
+		if fname ~= "" then
+			table.insert(qflist, { filename = git_root .. "/" .. fname, text = "changed in " .. commit })
+		end
+	end
+	vim.fn.setqflist(qflist, "r")
+	vim.cmd("copen")
 end, { desc = "Git Diff Commit with Previous" })
