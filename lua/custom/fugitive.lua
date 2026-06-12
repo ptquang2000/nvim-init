@@ -23,7 +23,16 @@ vim.keymap.set("n", "<leader>gL", function()
 	end
 end, { desc = "Git Log Graph (file)" })
 vim.keymap.set("n", "<leader>gb", "<cmd>G blame<CR>", { desc = "Git Blame" })
-vim.keymap.set("n", "<leader>gm", "<cmd>G submodule update --init --recursive<CR>", { desc = "Git Submodule Update" })
+vim.keymap.set("n", "<leader>gm", function()
+	local root = vim.fn.FugitiveWorkTree()
+	if root == "" then
+		vim.notify("Not a git repository", vim.log.levels.WARN)
+		return
+	end
+	local parent = vim.fn.system("git -C " .. vim.fn.shellescape(root) .. " rev-parse --show-superproject-working-tree"):gsub("\n", "")
+	if parent ~= "" then root = parent end
+	vim.fn.jobstart({ "git", "submodule", "update", "--init", "--recursive" }, { cwd = root })
+end, { desc = "Git Submodule Update" })
 vim.keymap.set("n", "<leader>gd", function()
 	local ft = vim.bo.filetype
 	local commit = "HEAD"
