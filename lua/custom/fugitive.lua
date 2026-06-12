@@ -10,14 +10,14 @@ vim.keymap.set("n", "<leader>gl", function()
 	if is_netrw() then
 		vim.cmd("G log")
 	else
-		vim.cmd("G log -- %")
+		vim.cmd("G log -- " .. vim.fn.fnameescape(vim.fn.expand("%:p")))
 	end
 end, { desc = "Git Log (file)" })
 vim.keymap.set("n", "<leader>gL", function()
 	if is_netrw() then
 		vim.cmd("G log --graph --oneline --decorate")
 	else
-		vim.cmd("G log --graph --oneline --decorate -- %")
+		vim.cmd("G log --graph --oneline --decorate -- " .. vim.fn.fnameescape(vim.fn.expand("%:p")))
 	end
 end, { desc = "Git Log Graph (file)" })
 vim.keymap.set("n", "<leader>gb", "<cmd>G blame<CR>", { desc = "Git Blame" })
@@ -28,7 +28,7 @@ vim.keymap.set("n", "<leader>gd", function()
   if ft == "netrw" then
     vim.cmd("edit " .. vim.fn.expand("<cfile>"))
     commit = "HEAD"
-  elseif ft == "fugitiveblame" or ft == "fugitive" then
+  elseif ft == "fugitiveblame" or ft == "fugitive" or ft == "git" then
     commit = vim.fn.expand("<cword>")
     vim.cmd("close!")
   else
