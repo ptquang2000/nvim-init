@@ -3,6 +3,7 @@ vim.g.maplocalleader = " "
 vim.g.have_nerd_font = true
 
 vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>")
+vim.keymap.set("n", "<leader>e", vim.cmd.Ex)
 
 vim.keymap.set("n", "<C-d>", "<C-d>zz")
 vim.keymap.set("n", "<C-u>", "<C-u>zz")
