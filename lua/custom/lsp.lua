@@ -34,46 +34,54 @@ vim.diagnostic.config({
 	},
 })
 
-vim.lsp.config["lua_ls"] = {
-	cmd = { "lua-language-server" },
-	filetypes = { "lua" },
-	root_markers = { { ".luarc.json", ".luarc.jsonc" }, ".git" },
-	capabilities = capabilities,
-	settings = {
-		Lua = {
-			runtime = { version = "LuaJIT" },
-			workspace = { library = vim.api.nvim_get_runtime_file("", true) },
-			format = { enable = true, defaultConfig = { indent_style = "space", indent_size = "2" } },
+local servers = {
+	lua_ls = {
+		cmd = { "lua-language-server" },
+		filetypes = { "lua" },
+		root_markers = { { ".luarc.json", ".luarc.jsonc" }, ".git" },
+		capabilities = capabilities,
+		settings = {
+			Lua = {
+				runtime = { version = "LuaJIT" },
+				workspace = { library = vim.api.nvim_get_runtime_file("", true) },
+				format = { enable = true, defaultConfig = { indent_style = "space", indent_size = "2" } },
+			},
 		},
 	},
-}
-
-vim.lsp.config["rust_analyzer"] = {
-	settings = {
-		["rust-analyzer"] = {
-			diagnostics = {
-				enable = false,
+	rust_analyzer = {
+		settings = {
+			["rust-analyzer"] = {
+				diagnostics = {
+					enable = false,
+				},
+			},
+		},
+	},
+	pyright = {
+		settings = {
+			["python"] = {
+				analysis = {
+					autoSearchPaths = true,
+					diagnosticMode = "openFilesOnly",
+					useLibraryCodeForTypes = true,
+				},
 			},
 		},
 	},
 }
 
-vim.lsp.config["pyright"] = {
-	settings = {
-		["python"] = {
-			analysis = {
-				autoSearchPaths = true,
-				diagnosticMode = "openFilesOnly",
-				useLibraryCodeForTypes = true,
-			},
-		},
-	},
-}
+local ensure_installed = { "lua_ls", "clangd", "pyright" }
 
 require("mason-lspconfig").setup({
-	ensure_installed = { "lua_ls", "gopls", "rust_analyzer", "clangd", "pyright" },
+	ensure_installed = ensure_installed,
 	automatic_enable = true,
 })
+
+for _, name in ipairs(ensure_installed) do
+	if servers[name] then
+		vim.lsp.config[name] = servers[name]
+	end
+end
 
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("custom-lsp-attach", { clear = true }),

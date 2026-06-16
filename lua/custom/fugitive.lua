@@ -1,9 +1,11 @@
 vim.keymap.set("n", "<leader>g", function()
 	local root = vim.fn.FugitiveWorkTree()
-	if root == "" then root = nil end
+	if root == "" then
+		root = nil
+	end
 	vim.fn.jobstart({ "git", "fetch", "--all", "--jobs=0" }, { cwd = root })
 	vim.cmd.Git()
-end, { desc = "Git" })
+end, { desc = "[G]it" })
 local function is_netrw()
 	return vim.bo.filetype == "netrw" or vim.fn.isdirectory(vim.api.nvim_buf_get_name(0)) == 1
 end
@@ -14,34 +16,42 @@ vim.keymap.set("n", "<leader>gl", function()
 	else
 		vim.cmd("G log -- " .. vim.fn.fnameescape(vim.fn.expand("%:p")))
 	end
-end, { desc = "Git Log (file)" })
+end, { desc = "[G]it [l]og" })
 vim.keymap.set("n", "<leader>gL", function()
 	if is_netrw() then
 		vim.cmd("G log --graph --oneline --decorate")
 	else
 		vim.cmd("G log --graph --oneline --decorate -- " .. vim.fn.fnameescape(vim.fn.expand("%:p")))
 	end
-end, { desc = "Git Log Graph (file)" })
-vim.keymap.set("n", "<leader>gb", "<cmd>G blame<CR>", { desc = "Git Blame" })
+end, { desc = "[G]it [L]og Graph" })
+vim.keymap.set("n", "<leader>gb", "<cmd>G blame<CR>", { desc = "[G]it [B]lame" })
 vim.keymap.set("n", "<leader>gm", function()
 	local root = vim.fn.FugitiveWorkTree()
 	if root == "" then
 		vim.notify("Not a git repository", vim.log.levels.WARN)
 		return
 	end
-	local parent = vim.fn.system("git -C " .. vim.fn.shellescape(root) .. " rev-parse --show-superproject-working-tree"):gsub("\n", "")
-	if parent ~= "" then root = parent end
+	local parent = vim.fn
+		.system("git -C " .. vim.fn.shellescape(root) .. " rev-parse --show-superproject-working-tree")
+		:gsub("\n", "")
+	if parent ~= "" then
+		root = parent
+	end
 	vim.fn.jobstart({ "git", "submodule", "update", "--init", "--recursive" }, { cwd = root })
-end, { desc = "Git Submodule Update" })
+end, { desc = "[G]it [S]ubmodule Update" })
 vim.keymap.set("n", "<leader>gd", function()
 	local ft = vim.bo.filetype
-	local commit = "HEAD"
+	local prev, commit
 	if ft == "fugitiveblame" or ft == "fugitive" or ft == "git" then
 		commit = vim.fn.expand("<cword>")
 		vim.cmd("close!")
+		prev = commit .. "~1"
+	else
+		prev = "HEAD"
+		commit = "."
 	end
 	if not is_netrw() then
-		vim.cmd("Gvdiffsplit " .. commit .. "~1")
+		vim.cmd("Gvdiffsplit " .. prev)
 		return
 	end
 	local git_root = vim.fn.FugitiveWorkTree()
@@ -49,7 +59,7 @@ vim.keymap.set("n", "<leader>gd", function()
 		vim.notify("Not a git repository", vim.log.levels.WARN)
 		return
 	end
-	local result = vim.fn.FugitiveExecute({ "diff", "--name-only", commit .. "~1", commit })
+	local result = vim.fn.FugitiveExecute({ "diff", "--name-only", prev, commit })
 	if result.exit_status ~= 0 or #result.stdout == 0 then
 		vim.notify("No changed files found", vim.log.levels.INFO)
 		return
@@ -62,4 +72,4 @@ vim.keymap.set("n", "<leader>gd", function()
 	end
 	vim.fn.setqflist(qflist, "r")
 	vim.cmd("copen")
-end, { desc = "Git Diff Commit with Previous" })
+end, { desc = "[G]it [D]iff Commit with Previous" })
