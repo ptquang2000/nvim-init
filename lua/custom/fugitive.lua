@@ -3,8 +3,12 @@ vim.keymap.set("n", "<leader>g", function()
 	if root == "" then
 		root = nil
 	end
-	vim.fn.jobstart({ "git", "fetch", "--all", "--jobs=0" }, { cwd = root })
-	vim.cmd.Git()
+	vim.fn.jobstart({ "git", "fetch", "--all", "--jobs=0" }, {
+		cwd = root,
+		on_exit = function()
+			vim.schedule(vim.cmd.Git)
+		end,
+	})
 end, { desc = "[G]it" })
 local function is_netrw()
 	return vim.bo.filetype == "netrw" or vim.fn.isdirectory(vim.api.nvim_buf_get_name(0)) == 1
