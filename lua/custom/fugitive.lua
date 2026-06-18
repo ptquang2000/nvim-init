@@ -3,10 +3,18 @@ vim.keymap.set("n", "<leader>g", function()
 	if root == "" then
 		root = nil
 	end
+	vim.cmd.Git()
 	vim.fn.jobstart({ "git", "fetch", "--all", "--jobs=0" }, {
 		cwd = root,
 		on_exit = function()
-			vim.schedule(vim.cmd.Git)
+			vim.schedule(function()
+				for _, win in ipairs(vim.api.nvim_list_wins()) do
+					if vim.bo[vim.api.nvim_win_get_buf(win)].filetype == "fugitive" then
+						vim.cmd.Git()
+						return
+					end
+				end
+			end)
 		end,
 	})
 end, { desc = "[G]it" })
