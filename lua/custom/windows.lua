@@ -3,14 +3,17 @@ if vim.fn.has("win32") ~= 1 then
 end
 
 -- ── Editor options (Windows) ────────────────────────────────────────────────
-vim.opt.tabstop = 2
-vim.opt.shiftwidth = 2
-vim.opt.softtabstop = 2
+vim.o.tabstop = 2
+vim.o.shiftwidth = 2
+vim.o.softtabstop = 2
 
-vim.opt.shell = "pwsh.exe"
-vim.opt.shellcmdflag = "-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command"
-vim.opt.shellquote = '"'
-vim.opt.shellxquote = ""
+vim.o.shell = "pwsh.exe"
+vim.o.shellcmdflag =
+	"-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
+vim.o.shellredir = '2>&1 | %%{ "$_" } | Out-File %s; exit $LastExitCode'
+vim.o.shellpipe = '2>&1 | %%{ "$_" } | tee %s; exit $LastExitCode'
+vim.o.shellquote = ""
+vim.o.shellxquote = ""
 
 -- ── clangd LSP (MSVC toolchain) ─────────────────────────────────────────────
 vim.lsp.config["clangd"] = {
@@ -61,10 +64,9 @@ vim.keymap.set("v", "<leader>f", function()
 end, { desc = "Format selection" })
 
 -- ── <C-f>: psmux-sessionizer (Windows replacement for tmux-sessionizer) ────
-local sessionizer = vim.fn.expand("$USERPROFILE/Documents/PowerShell/psmux-sessionizer.ps1")
-vim.keymap.set("n", "<C-f>", function()
-	vim.fn.jobstart(
-		{ "psmux", "new-window", "--", "pwsh.exe", "-NoLogo", "-NoProfile", "-File", sessionizer },
-		{ detach = true }
-	)
-end, { desc = "Open psmux sessionizer" })
+vim.keymap.set(
+	"n",
+	"<C-f>",
+	"<cmd>silent !psmux new-window -- pwsh -NoLogo -NoProfile -File $env:USERPROFILE/Documents/PowerShell/psmux-sessionizer.ps1<CR>",
+	{ desc = "Open psmux sessionizer" }
+)
