@@ -34,10 +34,10 @@ vim.lsp.config["clangd"] = {
 }
 
 -- ── nvim-msvc (Windows-only; registered here so it's not pulled on other OSes)
-vim.pack.add({
-	{ src = "https://github.com/ptquang2000/nvim-msvc.git" },
-})
--- vim.opt.runtimepath:prepend("C:/Users/quang.phan/work/nvim-msvc")
+-- vim.pack.add({
+-- 	{ src = "https://github.com/ptquang2000/nvim-msvc.git" },
+-- })
+vim.opt.runtimepath:prepend("C:/Users/quang.phan/work/nvim-msvc")
 require("custom.msvc")
 
 -- ── conform.nvim: format on selection only for C/C++ filetypes ─────────────
@@ -64,5 +64,8 @@ end, { desc = "Format selection" })
 -- ── <C-f>: psmux-sessionizer (Windows replacement for tmux-sessionizer) ────
 local sessionizer = vim.fn.expand("$USERPROFILE/Documents/PowerShell/psmux-sessionizer.ps1")
 vim.keymap.set("n", "<C-f>", function()
-	vim.fn.jobstart({ "psmux", "neww", "pwsh", "-NoLogo", "-NoProfile", "-File", sessionizer }, { detach = true })
+	vim.fn.jobstart(
+		{ "psmux", "new-window", "--", "pwsh.exe", "-NoLogo", "-NoProfile", "-File", sessionizer },
+		{ detach = true }
+	)
 end, { desc = "Open psmux sessionizer" })
