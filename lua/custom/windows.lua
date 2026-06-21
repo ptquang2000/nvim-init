@@ -20,7 +20,6 @@ vim.lsp.config["clangd"] = {
 		"--completion-style=detailed",
 		"--function-arg-placeholders=false",
 		"--clang-tidy",
-		"--compile-commands-dir=./bin",
 		"--query-driver=C:/Program Files/Microsoft Visual Studio/**/cl.exe",
 	},
 	filetypes = { "c", "cpp", "objc", "objcpp" },
@@ -34,10 +33,10 @@ vim.lsp.config["clangd"] = {
 }
 
 -- ── nvim-msvc (Windows-only; registered here so it's not pulled on other OSes)
--- vim.pack.add({
--- 	{ src = "https://github.com/ptquang2000/nvim-msvc.git" },
--- })
-vim.opt.runtimepath:prepend("C:/Users/quang.phan/work/nvim-msvc")
+vim.pack.add({
+	{ src = "https://github.com/ptquang2000/nvim-msvc.git" },
+})
+-- vim.opt.runtimepath:prepend("C:/Users/quang.phan/work/nvim-msvc")
 require("custom.msvc")
 
 -- ── conform.nvim: format on selection only for C/C++ filetypes ─────────────
