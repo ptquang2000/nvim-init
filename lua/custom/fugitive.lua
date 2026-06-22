@@ -1,23 +1,9 @@
 vim.keymap.set("n", "<leader>g", function()
-	local root = vim.fn.FugitiveWorkTree()
-	if root == "" then
-		root = nil
-	end
 	vim.cmd.Git()
-	vim.fn.jobstart({ "git", "fetch", "--all", "--jobs=0" }, {
-		cwd = root,
-		on_exit = function()
-			vim.schedule(function()
-				for _, win in ipairs(vim.api.nvim_list_wins()) do
-					if vim.bo[vim.api.nvim_win_get_buf(win)].filetype == "fugitive" then
-						vim.cmd.Git()
-						return
-					end
-				end
-			end)
-		end,
-	})
-end, { desc = "[G]it" })
+	vim.schedule(function()
+		vim.api.nvim_feedkeys(":Git fetch --all --jobs=0", "n", false)
+	end)
+end, { desc = "[G]it Fetch" })
 local function is_netrw()
 	return vim.bo.filetype == "netrw" or vim.fn.isdirectory(vim.api.nvim_buf_get_name(0)) == 1
 end
@@ -47,9 +33,10 @@ vim.keymap.set("n", "<leader>gm", function()
 		.system("git -C " .. vim.fn.shellescape(root) .. " rev-parse --show-superproject-working-tree")
 		:gsub("\n", "")
 	if parent ~= "" then
-		root = parent
+		vim.api.nvim_feedkeys(":Gcd " .. vim.fn.fnameescape(parent) .. " | Git submodule update --init --recursive", "n", false)
+	else
+		vim.api.nvim_feedkeys(":Git submodule update --init --recursive", "n", false)
 	end
-	vim.fn.jobstart({ "git", "submodule", "update", "--init", "--recursive" }, { cwd = root })
 end, { desc = "[G]it [S]ubmodule Update" })
 vim.keymap.set("n", "<leader>gd", function()
 	local ft = vim.bo.filetype
