@@ -1,4 +1,4 @@
-vim.keymap.set("n", "<leader>g", function()
+vim.keymap.set("n", "<leader>G", function()
 	vim.cmd.Git()
 	vim.schedule(function()
 		vim.api.nvim_feedkeys(":Git fetch --all --jobs=0", "n", false)

@@ -96,7 +96,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		map("gy", vim.lsp.buf.type_definition, "[G]oto t[Y]pe definition")
 		map("K", vim.lsp.buf.hover, "[H]over documentation")
 		map("gs", vim.lsp.buf.signature_help, "[S]ignature help", { "n", "i" })
-		map("gR", vim.lsp.buf.references, "[R]eferences")
+		map("gr", vim.lsp.buf.references, "[R]eferences")
 		map("grn", vim.lsp.buf.rename, "[R]e[N]ame symbol")
 		map("ga", vim.lsp.buf.code_action, "Code [A]ction", { "n", "v" })
 		map("gci", vim.lsp.buf.incoming_calls, "[I]ncoming calls")

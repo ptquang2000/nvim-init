@@ -19,3 +19,17 @@ vim.keymap.set({ "n", "v" }, "<leader>y", [["+y]], { desc = "[Y]ank to system cl
 vim.keymap.set({ "n", "v" }, "<leader>d", [["_d]], { desc = "[D]elete to black hole register" })
 
 vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux neww tmux-sessionizer<CR>", { desc = "Open tmux sessionizer" })
+
+vim.keymap.set("n", "<leader>bp", function()
+	vim.cmd("silent! %bd")
+	vim.cmd("Ex")
+end, { desc = "[B]uffer [P]rune All" })
+
+vim.keymap.set("n", "<leader>bc", function()
+	local curbuf = vim.api.nvim_get_current_buf()
+	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+		if buf ~= curbuf then
+			vim.api.nvim_buf_delete(buf, { force = true })
+		end
+	end
+end, { desc = "[B]uffer [C]lear Except Current" })
