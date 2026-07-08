@@ -33,3 +33,7 @@ vim.keymap.set("n", "<leader>bo", function()
 		end
 	end
 end, { desc = "[B]uffer clear, [O]pen last" })
+
+for i = 1, 9 do
+	vim.keymap.set("n", "<leader>" .. i, "<cmd>tabnext " .. i .. "<CR>", { desc = "[T]ab " .. i })
+end
