@@ -1,4 +1,16 @@
+local telescope = require("telescope")
 local builtin = require("telescope.builtin")
+
+telescope.setup({
+	defaults = {
+		layout_strategy = "bottom_pane",
+		layout_config = {
+			height = 25,
+			prompt_position = "top",
+		},
+	},
+})
+
 local map = function(keys, func, desc, mode)
 	mode = mode or "n"
 	vim.keymap.set(mode, keys, func, { desc = "Telescope: " .. desc })
@@ -32,8 +44,8 @@ map("<leader>sr", builtin.lsp_references, "Search References")
 map("<leader>sw", builtin.grep_string, "Search Word", { "n", "v" })
 map("<leader>ss", builtin.current_buffer_fuzzy_find, "Search in Buffer")
 map("<leader>si", function()
-	builtin.find_files({ no_ignore = true })
-end, "Search Files (no .gitignore)")
+	builtin.find_files({ no_ignore = true, hidden = true })
+end, "Search Files (no .gitignore, incl hidden)")
 map("<leader>sk", builtin.keymaps, "Search Keymaps")
 
 map("<leader>sG", function()
