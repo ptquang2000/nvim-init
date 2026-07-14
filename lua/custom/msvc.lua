@@ -3,9 +3,6 @@ if vim.fn.has("win32") ~= 1 then
 end
 
 require("msvc").setup({
-	settings = {
-		compile_commands = { outdir = "bin", builddir = "bin/cmake" },
-	},
 	default_settings = {
 		arch = "x64",
 		jobs = 4,
