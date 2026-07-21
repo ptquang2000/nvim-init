@@ -67,6 +67,6 @@ end, { desc = "Format selection" })
 vim.keymap.set(
 	"n",
 	"<C-f>",
-	"<cmd>silent !psmux new-window -- pwsh -NoLogo -NoProfile -File $env:USERPROFILE/Documents/PowerShell/psmux-sessionizer.ps1<CR>",
+	[[<cmd>silent !psmux new-window -- "& $env:USERPROFILE/Documents/PowerShell/psmux-sessionizer.ps1"<CR>]],
 	{ desc = "Open psmux sessionizer" }
 )
