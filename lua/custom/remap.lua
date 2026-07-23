@@ -18,7 +18,7 @@ vim.keymap.set("n", "<leader>Y", [["+Y]], { desc = "[Y]ank to clipboard" })
 vim.keymap.set({ "n", "v" }, "<leader>y", [["+y]], { desc = "[Y]ank to system clipboard" })
 vim.keymap.set({ "n", "v" }, "<leader>d", [["_d]], { desc = "[D]elete to black hole register" })
 
-vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux neww tmux-sessionizer<CR>", { desc = "Open tmux sessionizer" })
+vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux neww ~/.config/tmux-sessionizer/scripts/tmux-sessionizer<CR>", { desc = "Open tmux sessionizer" })
 
 vim.keymap.set("n", "<leader>be", function()
 	vim.cmd("silent! %bd")

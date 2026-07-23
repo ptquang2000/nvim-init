@@ -8,20 +8,20 @@ local function is_netrw()
 	return vim.bo.filetype == "netrw" or vim.fn.isdirectory(vim.api.nvim_buf_get_name(0)) == 1
 end
 
-vim.keymap.set("n", "<leader>gl", function()
+vim.keymap.set("n", "<leader>gL", function()
 	if is_netrw() then
 		vim.cmd("G log")
 	else
 		vim.cmd("G log -- " .. vim.fn.fnameescape(vim.fn.expand("%:p")))
 	end
-end, { desc = "[G]it [l]og" })
-vim.keymap.set("n", "<leader>gL", function()
+end, { desc = "[G]it [L]og" })
+vim.keymap.set("n", "<leader>gl", function()
 	if is_netrw() then
 		vim.cmd("G log --graph --oneline --decorate")
 	else
 		vim.cmd("G log --graph --oneline --decorate -- " .. vim.fn.fnameescape(vim.fn.expand("%:p")))
 	end
-end, { desc = "[G]it [L]og Graph" })
+end, { desc = "[G]it [l]og Graph" })
 vim.keymap.set("n", "<leader>gb", "<cmd>G blame<CR>", { desc = "[G]it [B]lame" })
 vim.keymap.set("n", "<leader>gm", function()
 	local root = vim.fn.FugitiveWorkTree()
@@ -33,7 +33,11 @@ vim.keymap.set("n", "<leader>gm", function()
 		.system("git -C " .. vim.fn.shellescape(root) .. " rev-parse --show-superproject-working-tree")
 		:gsub("\n", "")
 	if parent ~= "" then
-		vim.api.nvim_feedkeys(":Gcd " .. vim.fn.fnameescape(parent) .. " | Git submodule update --init --recursive", "n", false)
+		vim.api.nvim_feedkeys(
+			":Gcd " .. vim.fn.fnameescape(parent) .. " | Git submodule update --init --recursive",
+			"n",
+			false
+		)
 	else
 		vim.api.nvim_feedkeys(":Git submodule update --init --recursive", "n", false)
 	end
