@@ -1,3 +1,5 @@
+require("custom.pack")
+
 vim.pack.add({
 	{ src = "https://github.com/sainnhe/gruvbox-material.git" },
 
@@ -11,6 +13,7 @@ vim.pack.add({
 
 	{ src = "https://github.com/nvim-lua/plenary.nvim.git" },
 	{ src = "https://github.com/nvim-telescope/telescope.nvim.git" },
+	{ src = "https://github.com/nvim-telescope/telescope-fzf-native.nvim.git" },
 
 	{
 		src = "https://github.com/nvim-treesitter/nvim-treesitter.git",
