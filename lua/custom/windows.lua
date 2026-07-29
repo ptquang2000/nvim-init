@@ -64,9 +64,10 @@ vim.keymap.set("v", "<leader>f", function()
 end, { desc = "Format selection" })
 
 -- ── <C-f>: psmux-sessionizer (Windows replacement for tmux-sessionizer) ────
-vim.keymap.set(
-	"n",
-	"<C-f>",
-	[[<cmd>silent !psmux new-window -- "& $env:USERPROFILE/Documents/PowerShell/psmux-sessionizer.ps1"<CR>]],
-	{ desc = "Open psmux sessionizer" }
-)
+vim.keymap.set("n", "<C-f>", function()
+	vim.fn.jobstart({
+		"psmux", "display-popup", "-w", "80%", "-h", "70%", "-E",
+		"pwsh", "-NoProfile", "-File",
+		vim.fn.expand("$USERPROFILE") .. "/Documents/PowerShell/psmux-sessionizer.ps1"
+	})
+end, { desc = "Open psmux sessionizer" })
