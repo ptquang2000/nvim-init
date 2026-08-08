@@ -5,17 +5,11 @@ require("conform").setup({
 		lsp_format = "fallback",
 	},
 	formatters_by_ft = {
-		c = { "clang-format" },
-		cpp = { "clang-format" },
 		lua = { "stylua" },
 		go = { "gofmt" },
 		python = { "black", "isort" },
 	},
-	formatters = {
-		["clang-format"] = {
-			prepend_args = { "-style=file", "-fallback-style=LLVM" },
-		},
-	},
+	formatters = {},
 })
 
 vim.keymap.set("n", "<leader>f", function()

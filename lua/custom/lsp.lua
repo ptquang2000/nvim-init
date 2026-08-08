@@ -70,7 +70,7 @@ local servers = {
 	},
 }
 
-local ensure_installed = { "lua_ls", "clangd", "pyright" }
+local ensure_installed = { "lua_ls", "pyright" }
 
 require("mason-lspconfig").setup({
 	ensure_installed = ensure_installed,
