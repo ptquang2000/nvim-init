@@ -1,22 +1,36 @@
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "oil",
+	callback = function()
+		local ok, oil = pcall(require, "oil")
+		if not ok or not oil.get_current_dir then
+			return
+		end
+		local dir = oil.get_current_dir()
+		if dir then
+			vim.b.git_dir = vim.fn.FugitiveExtractGitDir(dir)
+		end
+	end,
+})
+
 vim.keymap.set("n", "<leader>G", function()
 	vim.cmd.Git()
 	vim.schedule(function()
 		vim.api.nvim_feedkeys(":Git fetch --all --jobs=0", "n", false)
 	end)
 end, { desc = "[G]it Fetch" })
-local function is_netrw()
-	return vim.bo.filetype == "netrw" or vim.fn.isdirectory(vim.api.nvim_buf_get_name(0)) == 1
+local function is_dir_buf()
+	return vim.bo.filetype == "netrw" or vim.bo.filetype == "oil" or vim.fn.isdirectory(vim.api.nvim_buf_get_name(0)) == 1
 end
 
 vim.keymap.set("n", "<leader>gL", function()
-	if is_netrw() then
+	if is_dir_buf() then
 		vim.cmd("G log")
 	else
 		vim.cmd("G log -- " .. vim.fn.fnameescape(vim.fn.expand("%:p")))
 	end
 end, { desc = "[G]it [L]og" })
 vim.keymap.set("n", "<leader>gl", function()
-	if is_netrw() then
+	if is_dir_buf() then
 		vim.cmd("G log --graph --oneline --decorate")
 	else
 		vim.cmd("G log --graph --oneline --decorate -- " .. vim.fn.fnameescape(vim.fn.expand("%:p")))
@@ -53,7 +67,7 @@ vim.keymap.set("n", "<leader>gd", function()
 		prev = "HEAD"
 		commit = "."
 	end
-	if not is_netrw() then
+	if not is_dir_buf() then
 		vim.cmd("Gvdiffsplit " .. prev)
 		return
 	end

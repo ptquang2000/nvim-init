@@ -3,7 +3,16 @@ vim.g.maplocalleader = " "
 vim.g.have_nerd_font = true
 
 vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "[<Esc>] Clear search highlights" })
-vim.keymap.set("n", "<leader>e", vim.cmd.Ex, { desc = "[E]xplorer" })
+vim.keymap.set("n", "<leader>e", function()
+	local dir = vim.fn.expand("%:p")
+	if vim.bo.filetype == "oil" then
+		dir = require("oil").get_current_dir() or dir
+	end
+	if dir == "" then
+		dir = vim.fn.getcwd()
+	end
+	require("oil").open(vim.fn.fnamemodify(dir, ":h"))
+end, { desc = "[E]xplorer (parent)" })
 
 vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "[<C-d>] Scroll down and center" })
 vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "[<C-u>] Scroll up and center" })
@@ -27,7 +36,7 @@ end, { desc = "Open tmux sessionizer" })
 
 vim.keymap.set("n", "<leader>be", function()
 	vim.cmd("silent! %bd")
-	vim.cmd("Ex")
+	vim.cmd("Oil")
 end, { desc = "[B]uffer clear, [E]xplore" })
 
 vim.keymap.set("n", "<leader>bo", function()
