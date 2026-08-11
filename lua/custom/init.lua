@@ -7,6 +7,7 @@ require("custom.conform")
 require("custom.oil")
 require("custom.treesitter")
 require("custom.windows")
+require("custom.linux")
 require("custom.harpoon")
 require("custom.fugitive")
 
