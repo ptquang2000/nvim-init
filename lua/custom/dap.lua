@@ -1,10 +1,18 @@
 local dap = require("dap")
 local dapui = require("dapui")
 
-dap.adapters.lldb = {
-	type = "executable",
-	command = "/usr/bin/lldb-dap",
-}
+dap.adapters.lldb = function(callback, config)
+	local project_define = vim.g.project_define or {}
+	local args = project_define.lldb_args
+	if type(args) ~= "table" then
+		args = { args }
+	end
+	callback({
+		type = "executable",
+		command = project_define.lldb_command,
+		args = args,
+	})
+end
 
 dap.configurations.cpp = {
 	{
@@ -12,7 +20,7 @@ dap.configurations.cpp = {
 		type = "lldb",
 		request = "launch",
 		program = function()
-			return vim.g.project_program
+			return (vim.g.project_define or {}).cpp_program
 		end,
 		cwd = "${workspaceFolder}",
 		stopOnEntry = false,
