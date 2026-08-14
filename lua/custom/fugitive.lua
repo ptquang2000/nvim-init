@@ -12,11 +12,27 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
+local fetch_job_id = nil
+
 vim.keymap.set("n", "<leader>G", function()
 	vim.cmd.Git()
-	vim.schedule(function()
-		vim.api.nvim_feedkeys(":Git fetch --all --jobs=0", "n", false)
-	end)
+	if fetch_job_id then
+		vim.notify("Git fetch already running", vim.log.levels.INFO)
+		return
+	end
+	local root = vim.fn.FugitiveWorkTree()
+	if root == "" then
+		return
+	end
+	fetch_job_id = vim.fn.jobstart({ "git", "-C", root, "fetch", "--all", "--prune", "--jobs=0" }, {
+		on_exit = function()
+			fetch_job_id = nil
+		end,
+	})
+	if fetch_job_id <= 0 then
+		fetch_job_id = nil
+		vim.notify("Failed to start git fetch", vim.log.levels.ERROR)
+	end
 end, { desc = "[G]it Fetch" })
 local function is_dir_buf()
 	return vim.bo.filetype == "netrw" or vim.bo.filetype == "oil" or vim.fn.isdirectory(vim.api.nvim_buf_get_name(0)) == 1

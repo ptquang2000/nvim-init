@@ -29,10 +29,20 @@ vim.keymap.set({ "n", "v" }, "<leader>d", [["_d]], { desc = "[D]elete to black h
 
 vim.keymap.set("n", "<C-f>", function()
 	vim.fn.jobstart({
-		"tmux", "display-popup", "-w", "80%", "-h", "70%", "-E",
-		vim.fn.expand("~/.config/tmux-sessionizer/scripts/tmux-sessionizer")
+		"tmux",
+		"display-popup",
+		"-w",
+		"80%",
+		"-h",
+		"70%",
+		"-E",
+		vim.fn.expand("~/.config/tmux-sessionizer/scripts/tmux-sessionizer"),
 	})
 end, { desc = "Open tmux sessionizer" })
+
+vim.keymap.set("n", "<leader>bd", function()
+	vim.cmd("silent! %bd")
+end, { desc = "[B]uffer [D]elete" })
 
 vim.keymap.set("n", "<leader>be", function()
 	vim.cmd("silent! %bd")
