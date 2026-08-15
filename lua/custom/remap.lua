@@ -41,7 +41,7 @@ vim.keymap.set("n", "<C-f>", function()
 end, { desc = "Open tmux sessionizer" })
 
 vim.keymap.set("n", "<leader>bd", function()
-	vim.cmd("silent! %bd")
+	vim.cmd("silent! bd")
 end, { desc = "[B]uffer [D]elete" })
 
 vim.keymap.set("n", "<leader>be", function()
