@@ -3,10 +3,6 @@ if vim.fn.has("win32") ~= 1 then
 end
 
 -- ── Editor options (Windows) ────────────────────────────────────────────────
-vim.o.tabstop = 2
-vim.o.shiftwidth = 2
-vim.o.softtabstop = 2
-
 vim.o.shell = "pwsh.exe"
 vim.o.shellcmdflag =
 	"-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
@@ -66,8 +62,16 @@ end, { desc = "Format selection" })
 -- ── <C-f>: psmux-sessionizer (Windows replacement for tmux-sessionizer) ────
 vim.keymap.set("n", "<C-f>", function()
 	vim.fn.jobstart({
-		"psmux", "display-popup", "-w", "80%", "-h", "70%", "-E",
-		"pwsh", "-NoProfile", "-File",
-		vim.fn.expand("$USERPROFILE") .. "/Documents/PowerShell/psmux-sessionizer.ps1"
+		"psmux",
+		"display-popup",
+		"-w",
+		"80%",
+		"-h",
+		"70%",
+		"-E",
+		"pwsh",
+		"-NoProfile",
+		"-File",
+		vim.fn.expand("$USERPROFILE") .. "/Documents/PowerShell/psmux-sessionizer.ps1",
 	})
 end, { desc = "Open psmux sessionizer" })

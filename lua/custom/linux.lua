@@ -10,6 +10,3 @@ vim.pack.add({
 })
 
 require("custom.dap")
-
-vim.o.exrc = true
-vim.o.secure = true

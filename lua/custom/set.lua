@@ -8,6 +8,9 @@ vim.o.cursorline = true
 vim.o.smartindent = true
 vim.o.breakindent = true
 vim.o.expandtab = true
+vim.o.tabstop = 2
+vim.o.shiftwidth = 2
+vim.o.softtabstop = 2
 
 -- searching
 vim.o.ignorecase = true
@@ -38,3 +41,5 @@ vim.o.confirm = true
 vim.schedule(function()
 	vim.o.clipboard = "unnamedplus"
 end)
+vim.o.exrc = true
+vim.o.secure = true
