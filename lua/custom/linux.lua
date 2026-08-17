@@ -11,5 +11,6 @@ vim.pack.add({
 
 require("custom.dap")
 
-vim.o.exrc = true
-vim.o.secure = true
+vim.o.tabstop = 4
+vim.o.shiftwidth = 4
+vim.o.softtabstop = 4

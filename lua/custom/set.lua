@@ -38,3 +38,5 @@ vim.o.confirm = true
 vim.schedule(function()
 	vim.o.clipboard = "unnamedplus"
 end)
+vim.o.exrc = true
+vim.o.secure = true
