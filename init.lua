@@ -3,8 +3,6 @@ require("custom.pack")
 vim.pack.add({
 	{ src = "https://github.com/sainnhe/gruvbox-material.git" },
 
-	{ src = "https://github.com/stevearc/conform.nvim.git" },
-
 	{ src = "https://github.com/neovim/nvim-lspconfig.git" },
 	{ src = "https://github.com/mason-org/mason.nvim.git" },
 	{ src = "https://github.com/mason-org/mason-lspconfig.nvim.git" },
