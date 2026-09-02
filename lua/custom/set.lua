@@ -33,13 +33,12 @@ vim.o.autoread = true
 vim.o.undofile = true
 
 -- completion
-vim.o.completeopt = ""
-vim.o.complete = ""
+vim.o.completeopt = "menuone,noselect,popup"
 
 -- misc
 vim.o.confirm = true
 vim.schedule(function()
-	vim.o.clipboard = "unnamedplus"
+  vim.o.clipboard = "unnamedplus"
 end)
 vim.o.exrc = true
 vim.o.secure = true

@@ -4,14 +4,14 @@ vim.g.have_nerd_font = true
 
 vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "[<Esc>] Clear search highlights" })
 vim.keymap.set("n", "<leader>e", function()
-	local dir = vim.fn.expand("%:p")
-	if vim.bo.filetype == "oil" then
-		dir = require("oil").get_current_dir() or dir
-	end
-	if dir == "" then
-		dir = vim.fn.getcwd()
-	end
-	require("oil").open(vim.fn.fnamemodify(dir, ":h"))
+  local dir = vim.fn.expand("%:p")
+  if vim.bo.filetype == "oil" then
+    dir = require("oil").get_current_dir() or dir
+  end
+  if dir == "" then
+    dir = vim.fn.getcwd()
+  end
+  require("oil").open(vim.fn.fnamemodify(dir, ":h"))
 end, { desc = "[E]xplorer (parent)" })
 
 vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "[<C-d>] Scroll down and center" })
@@ -28,36 +28,36 @@ vim.keymap.set({ "n", "v" }, "<leader>y", [["+y]], { desc = "[Y]ank to system cl
 vim.keymap.set({ "n", "v" }, "<leader>d", [["_d]], { desc = "[D]elete to black hole register" })
 
 vim.keymap.set("n", "<C-f>", function()
-	vim.fn.jobstart({
-		"tmux",
-		"display-popup",
-		"-w",
-		"80%",
-		"-h",
-		"70%",
-		"-E",
-		vim.fn.expand("~/.config/tmux-sessionizer/scripts/tmux-sessionizer"),
-	})
+  vim.fn.jobstart({
+    "tmux",
+    "display-popup",
+    "-w",
+    "80%",
+    "-h",
+    "70%",
+    "-E",
+    vim.fn.expand("~/.config/tmux-sessionizer/scripts/tmux-sessionizer"),
+  })
 end, { desc = "Open tmux sessionizer" })
 
 vim.keymap.set("n", "<leader>bd", function()
-	vim.cmd("silent! bd")
+  vim.cmd("silent! bd")
 end, { desc = "[B]uffer [D]elete" })
 
 vim.keymap.set("n", "<leader>be", function()
-	vim.cmd("silent! %bd")
-	vim.cmd("Oil")
+  vim.cmd("silent! %bd")
+  vim.cmd("Oil")
 end, { desc = "[B]uffer clear, [E]xplore" })
 
 vim.keymap.set("n", "<leader>bo", function()
-	local curbuf = vim.api.nvim_get_current_buf()
-	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-		if buf ~= curbuf then
-			vim.api.nvim_buf_delete(buf, { force = true })
-		end
-	end
+  local curbuf = vim.api.nvim_get_current_buf()
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if buf ~= curbuf then
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end
+  end
 end, { desc = "[B]uffer clear, [O]pen last" })
 
 for i = 1, 9 do
-	vim.keymap.set("n", "<leader>" .. i, "<cmd>tabnext " .. i .. "<CR>", { desc = "[T]ab " .. i })
+  vim.keymap.set("n", "<leader>" .. i, "<cmd>tabnext " .. i .. "<CR>", { desc = "[T]ab " .. i })
 end

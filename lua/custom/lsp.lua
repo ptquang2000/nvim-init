@@ -1,22 +1,7 @@
 require("mason").setup()
 
-local cmp = require("cmp")
-cmp.setup({
-  mapping = cmp.mapping.preset.insert({
-    ["<C-Space>"] = cmp.mapping.complete(),
-  }),
-  completion = {
-    completeopt = "menu,menuone,noinsert",
-  },
-  sources = { { name = "nvim_lsp" }, { name = "buffer" } },
-})
-
-local capabilities = vim.tbl_deep_extend(
-  "force",
-  {},
-  vim.lsp.protocol.make_client_capabilities(),
-  require("cmp_nvim_lsp").default_capabilities()
-)
+local capabilities =
+    require("blink.cmp").get_lsp_capabilities()
 
 vim.diagnostic.config({
   severity_sort = true,
@@ -49,6 +34,7 @@ local servers = {
     },
   },
   rust_analyzer = {
+    capabilities = capabilities,
     settings = {
       ["rust-analyzer"] = {
         diagnostics = {
@@ -58,6 +44,7 @@ local servers = {
     },
   },
   pyright = {
+    capabilities = capabilities,
     settings = {
       ["python"] = {
         analysis = {
@@ -72,37 +59,35 @@ local servers = {
 
 local ensure_installed = { "lua_ls", "pyright", "rust_analyzer", "clangd" }
 
+for _, name in ipairs(ensure_installed) do
+  if servers[name] then
+    vim.lsp.config(name, servers[name])
+  end
+end
+
 require("mason-lspconfig").setup({
   ensure_installed = ensure_installed,
   automatic_enable = true,
 })
 
-for _, name in ipairs(ensure_installed) do
-  if servers[name] then
-    vim.lsp.config[name] = servers[name]
-  end
-end
-
 vim.api.nvim_create_autocmd("LspAttach", {
   group = vim.api.nvim_create_augroup("custom-lsp-attach", { clear = true }),
-  callback = function(event)
-    local client = vim.lsp.get_client_by_id(event.data.client_id)
-    if not client then
-      return
-    end
+  callback = function(args)
+    local clients = vim.lsp.get_clients({ id = args.data.client_id })
+    local client = clients[1]
 
     local map = function(keys, func, desc, mode)
       mode = mode or "n"
-      vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = "LSP: " .. desc })
+      vim.keymap.set(mode, keys, func, { buffer = args.buf, desc = "LSP: " .. desc })
     end
 
     if client:supports_method("textDocument/formatting") then
       if vim.fn.has("linux") == 1 then
         vim.api.nvim_create_autocmd("BufWritePre", {
-          buffer = event.buf,
+          buffer = args.buf,
 
           callback = function()
-            vim.lsp.buf.format({ bufnr = event.buf, id = client.id })
+            vim.lsp.buf.format({ bufnr = args.buf, id = client.id })
           end,
         })
       elseif vim.fn.has("win32") == 1 then
@@ -114,16 +99,5 @@ vim.api.nvim_create_autocmd("LspAttach", {
         end, "[G]et selection [F]ormatted", "v")
       end
     end
-
-    map("gd", vim.lsp.buf.definition, "[G]oto [D]efinition")
-    map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
-    map("gi", vim.lsp.buf.implementation, "[G]oto [I]mplementation")
-    map("gy", vim.lsp.buf.type_definition, "[G]oto t[Y]pe definition")
-    map("K", vim.lsp.buf.hover, "[H]over documentation")
-    map("gr", vim.lsp.buf.references, "[R]eferences")
-    map("grn", vim.lsp.buf.rename, "[R]e[N]ame symbol")
-    map("ga", vim.lsp.buf.code_action, "Code [A]ction", { "n", "v" })
-    map("gci", vim.lsp.buf.incoming_calls, "[I]ncoming calls")
-    map("gco", vim.lsp.buf.outgoing_calls, "[O]utgoing calls")
   end,
 })
