@@ -14,7 +14,7 @@ vim.api.nvim_create_autocmd("FileType", {
 
 local fetch_job_id = nil
 
-vim.keymap.set("n", "<leader>g", function()
+vim.keymap.set("n", "<leader>gg", function()
   vim.cmd.Git()
   if fetch_job_id then
     vim.notify("Git fetch already running", vim.log.levels.INFO)
