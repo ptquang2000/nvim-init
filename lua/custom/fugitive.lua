@@ -27,6 +27,7 @@ vim.keymap.set("n", "<leader>g", function()
   fetch_job_id = vim.fn.jobstart({ "git", "-C", root, "fetch", "--all", "--prune", "--jobs=0" }, {
     on_exit = function()
       fetch_job_id = nil
+      vim.notify("Git fetch completed", vim.log.levels.INFO)
     end,
   })
   if fetch_job_id <= 0 then
@@ -52,7 +53,7 @@ vim.keymap.set("n", "<leader>gl", function()
     vim.cmd("G log --graph --oneline --decorate -- " .. vim.fn.fnameescape(vim.fn.expand("%:p")))
   end
 end, { desc = "[G]it [l]og Graph" })
-vim.keymap.set("n", "<leader>gb", "<cmd>G blame<CR>", { desc = "[G]it [B]lame" })
+vim.keymap.set("n", "<leader>gB", "<cmd>G blame<CR>", { desc = "[G]it [B]lame" })
 vim.keymap.set("n", "<leader>gm", function()
   local root = vim.fn.FugitiveWorkTree()
   if root == "" then
