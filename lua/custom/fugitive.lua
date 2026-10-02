@@ -43,14 +43,14 @@ vim.keymap.set("n", "<leader>gL", function()
   if is_dir_buf() then
     vim.cmd("G log")
   else
-    vim.cmd("G log -- " .. vim.fn.fnameescape(vim.fn.expand("%:p")))
+    vim.cmd("G log --follow -- " .. vim.fn.fnameescape(vim.fn.expand("%:p")))
   end
 end, { desc = "[G]it [L]og" })
 vim.keymap.set("n", "<leader>gl", function()
   if is_dir_buf() then
     vim.cmd("G log --graph --oneline --decorate")
   else
-    vim.cmd("G log --graph --oneline --decorate -- " .. vim.fn.fnameescape(vim.fn.expand("%:p")))
+    vim.cmd("G log --follow --graph --oneline --decorate -- " .. vim.fn.fnameescape(vim.fn.expand("%:p")))
   end
 end, { desc = "[G]it [l]og Graph" })
 vim.keymap.set("n", "<leader>gB", "<cmd>G blame<CR>", { desc = "[G]it [B]lame" })
