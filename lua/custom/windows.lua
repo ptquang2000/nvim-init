@@ -38,12 +38,22 @@ vim.api.nvim_create_autocmd("LspAttach", {
     end
 
     if client:supports_method("textDocument/formatting") then
-      map("gf", function()
-        vim.lsp.buf.format({
-          range =
-              vim.lsp.util.make_range_params(nil, "utf-16").range
+      if client.name == "clangd" then
+        map("gf", function()
+          vim.lsp.buf.format({
+            range =
+                vim.lsp.util.make_range_params(nil, "utf-16").range
+          })
+        end, "[G]et selection [F]ormatted", "v")
+      else
+        vim.api.nvim_create_autocmd("BufWritePre", {
+          buffer = args.buf,
+
+          callback = function()
+            vim.lsp.buf.format({ bufnr = args.buf, id = client.id })
+          end,
         })
-      end, "[G]et selection [F]ormatted", "v")
+      end
     end
   end,
 })
