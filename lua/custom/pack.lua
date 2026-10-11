@@ -2,13 +2,31 @@
 -- Required before vim.pack.add, or a fresh install never fires it.
 local function build_fzf(src)
   local build = src .. "/build"
+  local steps
   if vim.fn.has("win32") == 1 then
-    vim.system({ "cmake", "-S", src, "-B", build, "-DCMAKE_BUILD_TYPE=Release" }):wait()
-    vim.system({ "cmake", "--build", build, "--config", "Release" }):wait()
-    vim.system({ "cmake", "--install", build, "--prefix", build }):wait()
+    -- Outside a vcvars shell CMake's default NMake/MSVC finds no compiler,
+    -- so use Ninja + clang when present. --fresh drops a cache left by a
+    -- failed run with another generator.
+    local configure = { "cmake", "--fresh", "-S", src, "-B", build, "-DCMAKE_BUILD_TYPE=Release" }
+    if vim.fn.executable("ninja") == 1 and vim.fn.executable("clang") == 1 then
+      vim.list_extend(configure, { "-G", "Ninja", "-DCMAKE_C_COMPILER=clang" })
+    end
+    steps = {
+      configure,
+      { "cmake", "--build", build, "--config", "Release" },
+      { "cmake", "--install", build, "--prefix", build },
+    }
   else
     -- Linux and macOS both use the plugin's Makefile.
-    vim.system({ "make", "-C", src }):wait()
+    steps = { { "make", "-C", src } }
+  end
+  for _, cmd in ipairs(steps) do
+    local res = vim.system(cmd, { text = true }):wait()
+    if res.code ~= 0 then
+      vim.notify(("fzf-native build failed: %s\n%s%s"):format(table.concat(cmd, " "), res.stdout, res.stderr),
+        vim.log.levels.ERROR)
+      return
+    end
   end
 end
 
