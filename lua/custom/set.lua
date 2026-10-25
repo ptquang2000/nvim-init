@@ -37,6 +37,8 @@ vim.o.completeopt = "menuone,noselect,popup"
 
 -- misc
 vim.o.confirm = true
+-- NOTE: workaround for https://github.com/stevearc/oil.nvim/issues/777
+vim.o.sessionoptions = "buffers,curdir,folds,help,tabpages,winsize,terminal"
 vim.schedule(function()
   vim.o.clipboard = "unnamedplus"
 end)
