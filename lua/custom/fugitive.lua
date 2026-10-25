@@ -25,9 +25,16 @@ vim.keymap.set("n", "<leader>gg", function()
     return
   end
   fetch_job_id = vim.fn.jobstart({ "git", "-C", root, "fetch", "--all", "--prune", "--jobs=0" }, {
-    on_exit = function()
+    on_exit = function(_, code)
       fetch_job_id = nil
-      vim.notify("Git fetch completed", vim.log.levels.INFO)
+      if code == 0 then
+        vim.schedule(function()
+          vim.fn.FugitiveDidChange(0)
+        end)
+        vim.notify("Git fetch completed", vim.log.levels.INFO)
+      else
+        vim.notify("Git fetch failed (exit code " .. code .. ")", vim.log.levels.WARN)
+      end
     end,
   })
   if fetch_job_id <= 0 then
@@ -36,7 +43,8 @@ vim.keymap.set("n", "<leader>gg", function()
   end
 end, { desc = "[G]it Fetch" })
 local function is_dir_buf()
-  return vim.bo.filetype == "netrw" or vim.bo.filetype == "oil" or vim.fn.isdirectory(vim.api.nvim_buf_get_name(0)) == 1
+  return vim.bo.filetype == "netrw" or vim.bo.filetype == "oil" or
+      vim.fn.isdirectory(vim.api.nvim_buf_get_name(0) or "") == 1
 end
 
 vim.keymap.set("n", "<leader>gL", function()

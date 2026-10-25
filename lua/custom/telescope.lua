@@ -28,23 +28,25 @@ end
 
 local function git_cwd()
   local file = vim.api.nvim_buf_get_name(0)
-  local dir
-  if vim.bo.filetype == "oil" then
-    dir = require("oil").get_current_dir() or vim.fn.expand("%:p"):gsub("[/\\]$", "")
-  elseif file:match("^fugitive://") then
-    local git_dir = file:match("^fugitive://(.-)//") or vim.b.fugitive_repo
-    dir = git_dir and
-        vim.fn.systemlist("git --git-dir=" .. vim.fn.shellescape(git_dir) .. " rev-parse --show-toplevel")[1]
-    dir = dir or vim.fn.getcwd()
-  elseif vim.fn.isdirectory(file) == 1 then
-    dir = file:gsub("[/\\]$", "")
-  elseif file ~= "" then
-    dir = vim.fn.fnamemodify(file, ":h")
-  else
-    dir = vim.fn.getcwd()
+  if file ~= nil then
+    local dir
+    if vim.bo.filetype == "oil" then
+      dir = require("oil").get_current_dir() or vim.fn.expand("%:p"):gsub("[/\\]$", "")
+    elseif file:match("^fugitive://") then
+      local git_dir = file:match("^fugitive://(.-)//") or vim.b.fugitive_repo
+      dir = git_dir and
+          vim.fn.systemlist("git --git-dir=" .. vim.fn.shellescape(git_dir) .. " rev-parse --show-toplevel")[1]
+      dir = dir or vim.fn.getcwd()
+    elseif vim.fn.isdirectory(file) == 1 then
+      dir = file:gsub("[/\\]$", "")
+    elseif file ~= "" then
+      dir = vim.fn.fnamemodify(file, ":h")
+    else
+      dir = vim.fn.getcwd()
+    end
+    local git_root = vim.fn.systemlist("git -C " .. vim.fn.shellescape(dir) .. " rev-parse --show-toplevel")[1]
+    return (git_root and git_root ~= "") and git_root or dir
   end
-  local git_root = vim.fn.systemlist("git -C " .. vim.fn.shellescape(dir) .. " rev-parse --show-toplevel")[1]
-  return (git_root and git_root ~= "") and git_root or dir
 end
 
 map("<leader>fo", builtin.buffers, "[F]ind [O]pend buffers")
